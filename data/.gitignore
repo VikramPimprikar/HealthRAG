@@ -1,0 +1,8 @@
+# Ignore raw data files (can be large)
+raw/
+*.csv
+*.xlsx
+*.xls
+
+# Keep the directory structure
+!.gitkeep

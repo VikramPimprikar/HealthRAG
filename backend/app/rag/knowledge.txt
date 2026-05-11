@@ -1,0 +1,9 @@
+Heart disease risk increases with high cholesterol, high blood pressure, and age.
+
+Chest pain type is a strong indicator of cardiovascular problems.
+
+Exercise induced angina suggests reduced blood flow to the heart.
+
+Oldpeak (ST depression) indicates abnormal heart stress response.
+
+Higher number of major vessels (ca) increases severity of heart disease.

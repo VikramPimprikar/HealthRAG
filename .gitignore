@@ -1,0 +1,101 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# =========================
+# Build / Distribution
+# =========================
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# =========================
+# Logs / Cache
+# =========================
+*.log
+.cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# React
+# =========================
+frontend/node_modules/
+frontend/build/
+
+# =========================
+# Vector Database
+# =========================
+vectordb/
+*.faiss
+
+# =========================
+# ML Models
+# =========================
+*.pkl
+*.joblib
+*.h5
+*.pth
+*.pt
+*.ckpt
+
+# =========================
+# Large Data Files
+# =========================
+data/raw/
+data/processed/
+
+# =========================
+# Chroma / LangChain
+# =========================
+chroma_db/

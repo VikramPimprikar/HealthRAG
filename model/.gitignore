@@ -1,0 +1,13 @@
+# Ignore model artifacts and large files
+*.pkl
+*.joblib
+*.h5
+*.pth
+*.pt
+*.ckpt
+*.model
+saved_models/
+*.pickle
+
+# Keep the directory structure
+!.gitkeep
