@@ -131,6 +131,15 @@ def training_pipeline():
     # Split
     X_train, X_test, y_train, y_test = split_data(X, y)
 
+    # Save train and test datasets
+    train_df = X_train.copy()
+    train_df[TARGET_COLUMN] = y_train
+    train_df.to_csv(TRAIN_DATA_FILE, index=False)
+
+    test_df = X_test.copy()
+    test_df[TARGET_COLUMN] = y_test
+    test_df.to_csv(TEST_DATA_FILE, index=False)
+
     # Train
     model = train_model(X_train, y_train)
 
@@ -139,7 +148,7 @@ def training_pipeline():
 
     logger.info("✅ TRAINING COMPLETE")
 
-    return model
+    return model, X_train, X_test, y_train, y_test
 
 # ============================================================
 # MAIN

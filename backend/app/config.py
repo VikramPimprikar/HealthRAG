@@ -48,9 +48,10 @@ VECTOR_DB_DIR = BACKEND_DIR / 'vector_db'
 # ============================================================
 
 # Input data file
-RAW_DATA_FILE = RAW_DATA_DIR / 'heart_disease.csv'
+RAW_DATA_FILE = (RAW_DATA_DIR / 'heart_disease.csv') if (RAW_DATA_DIR / 'heart_disease.csv').exists() else (DATA_DIR / 'heart_disease.csv')
 
 # Processed data files
+PROCESSED_DATA_DIR.mkdir(exist_ok=True, parents=True)
 PROCESSED_DATA_FILE = PROCESSED_DATA_DIR / 'processed_data.csv'
 TRAIN_DATA_FILE = PROCESSED_DATA_DIR / 'train_data.csv'
 TEST_DATA_FILE = PROCESSED_DATA_DIR / 'test_data.csv'

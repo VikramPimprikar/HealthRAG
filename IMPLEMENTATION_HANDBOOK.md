@@ -132,7 +132,7 @@ class BlockchainAuditLogger:
         'role': str,
         'query': str,
         'response': str,
-        'previous_hash': str (links to previous block),
+        'previous_hash': str (links to previous block), 
         'hash': str (SHA-256 of this block),
         'nonce': int
     }

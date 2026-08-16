@@ -3,7 +3,7 @@
 # ============================================================
 
 from enum import Enum
-from typing import Optional, Set, Dict
+from typing import Optional, Set, Dict, List
 
 
 # ============================================================
@@ -68,52 +68,70 @@ class User:
 # DEFAULT USERS AND PERMISSIONS
 # ============================================================
 
-DEFAULT_USERS = {
-    "admin": User(
-        user_id="admin",
-        name="Administrator",
-        role=UserRole.ADMIN,
-        permissions={
-            Permission.VIEW_PATIENT_DATA,
-            Permission.EDIT_PATIENT_DATA,
-            Permission.REQUEST_PREDICTION,
-            Permission.VIEW_AUDIT_LOGS,
-            Permission.QUERY_KNOWLEDGE_BASE,
-            Permission.MANAGE_USERS
-        }
-    ),
-    "DOC001": User(
-        user_id="DOC001",
-        name="Doctor One",
-        role=UserRole.DOCTOR,
-        permissions={
-            Permission.VIEW_PATIENT_DATA,
-            Permission.EDIT_PATIENT_DATA,
-            Permission.REQUEST_PREDICTION,
-            Permission.QUERY_KNOWLEDGE_BASE
-        }
-    ),
-    "D101": User(
-        user_id="D101",
-        name="Doctor One",
-        role=UserRole.DOCTOR,
-        permissions={
-            Permission.VIEW_PATIENT_DATA,
-            Permission.EDIT_PATIENT_DATA,
-            Permission.REQUEST_PREDICTION,
-            Permission.QUERY_KNOWLEDGE_BASE
-        }
-    ),
-    "NURSE001": User(
-        user_id="NURSE001",
-        name="Nurse One",
-        role=UserRole.NURSE,
-        permissions={
-            Permission.VIEW_PATIENT_DATA,
-            Permission.EDIT_PATIENT_DATA
-        }
-    ),
-}
+def build_default_users() -> Dict[str, User]:
+    users = [
+        User(
+            user_id="admin",
+            name="Admin",
+            role=UserRole.ADMIN,
+            permissions={
+                Permission.VIEW_PATIENT_DATA,
+                Permission.EDIT_PATIENT_DATA,
+                Permission.REQUEST_PREDICTION,
+                Permission.VIEW_AUDIT_LOGS,
+                Permission.QUERY_KNOWLEDGE_BASE,
+                Permission.MANAGE_USERS
+            }
+        ),
+        User(
+            user_id="DOC001",
+            name="Doctor",
+            role=UserRole.DOCTOR,
+            permissions={
+                Permission.VIEW_PATIENT_DATA,
+                Permission.EDIT_PATIENT_DATA,
+                Permission.REQUEST_PREDICTION,
+                Permission.QUERY_KNOWLEDGE_BASE
+            }
+        ),
+        User(
+            user_id="D101",
+            name="Doctor",
+            role=UserRole.DOCTOR,
+            permissions={
+                Permission.VIEW_PATIENT_DATA,
+                Permission.EDIT_PATIENT_DATA,
+                Permission.REQUEST_PREDICTION,
+                Permission.QUERY_KNOWLEDGE_BASE
+            }
+        ),
+        User(
+            user_id="NURSE001",
+            name="Nurse",
+            role=UserRole.NURSE,
+            permissions={
+                Permission.VIEW_PATIENT_DATA,
+                Permission.EDIT_PATIENT_DATA
+            }
+        ),
+        User(
+            user_id="AUDITOR001",
+            name="Auditor",
+            role=UserRole.AUDITOR,
+            permissions={
+                Permission.VIEW_AUDIT_LOGS
+            }
+        ),
+        User(
+            user_id="PATIENT001",
+            name="Patient",
+            role=UserRole.PATIENT,
+            permissions={
+                Permission.VIEW_PATIENT_DATA
+            }
+        )
+    ]
+    return {u.user_id.lower(): u for u in users}
 
 
 # ============================================================
@@ -124,7 +142,7 @@ class AccessControlManager:
     """Manages access control for the system"""
     
     def __init__(self):
-        self.users: Dict[str, User] = DEFAULT_USERS.copy()
+        self.users: Dict[str, User] = build_default_users()
     
     def add_user(self, user: User):
         """Add a new user"""
@@ -132,13 +150,15 @@ class AccessControlManager:
     
     def remove_user(self, user_id: str):
         """Remove a user"""
-        user_id_lower = user_id.lower()
+        user_id_lower = user_id.strip().lower()
         if user_id_lower in self.users:
             del self.users[user_id_lower]
     
     def get_user(self, user_id: str) -> Optional[User]:
-        """Get user by ID"""
-        user_id_lower = user_id.lower()
+        """Get user by ID (case-insensitive)"""
+        if not user_id:
+            return None
+        user_id_lower = user_id.strip().lower()
         return self.users.get(user_id_lower)
     
     def check_permission(self, user_id: str, permission: Permission) -> bool:
@@ -146,17 +166,9 @@ class AccessControlManager:
         user = self.get_user(user_id)
         
         if not user:
-            print(f"⚠️  User '{user_id}' not found in access control")
             return False
         
-        has_perm = user.has_permission(permission)
-        
-        if not has_perm:
-            print(f"❌ User '{user_id}' denied permission: {permission.value}")
-        else:
-            print(f"✓ User '{user_id}' granted permission: {permission.value}")
-        
-        return has_perm
+        return user.has_permission(permission)
     
     def grant_permission(self, user_id: str, permission: Permission) -> bool:
         """Grant permission to user"""
@@ -178,19 +190,24 @@ class AccessControlManager:
         user.remove_permission(permission)
         return True
     
-    def list_users(self):
+    def list_users(self) -> List[Dict]:
         """List all users with their roles and permissions"""
         return [user.to_dict() for user in self.users.values()]
 
 
+# Global singleton instance
+access_control_manager = AccessControlManager()
+
+
 # ============================================================
-# LEGACY FUNCTIONS FOR BACKWARD COMPATIBILITY
+# UTILITY AND LEGACY FUNCTIONS
 # ============================================================
 
 def check_access(user_id: str) -> bool:
-    """Legacy function - check if user is authorized"""
-    user_id = user_id.strip().upper()
-    
-    authorized_users = ["D101", "DOC001", "ADMIN"]
-    
-    return user_id in authorized_users
+    """Check if user has query knowledge base access"""
+    return access_control_manager.check_permission(user_id, Permission.QUERY_KNOWLEDGE_BASE)
+
+
+def check_user_permission(user_id: str, permission: Permission) -> bool:
+    """Check user permission helper"""
+    return access_control_manager.check_permission(user_id, permission)

@@ -143,7 +143,7 @@ def feature_engineering_pipeline():
 
     logger.info("✅ Feature engineering completed successfully!")
 
-    return df_final
+    return df_final, importance_df, selected_features
 
 # ============================================================
 # RUN

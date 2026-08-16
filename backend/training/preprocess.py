@@ -170,6 +170,12 @@ def clean_data(df):
     original_columns = df_clean.columns.tolist()
     columns_to_drop = []
     
+    # 0. Remove identifier / administrative columns
+    for id_col in ['id', 'dataset', 'patient_id']:
+        if id_col in df_clean.columns:
+            columns_to_drop.append(id_col)
+            logger.info(f"   - Dropping identifier/administrative column: '{id_col}'")
+
     # 1. Remove columns with excessive missing values
     logger.info("\n1. Checking for columns with excessive missing values (>40%)...")
     missing_percentages = (df_clean.isnull().sum() / len(df_clean)) * 100

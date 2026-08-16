@@ -204,7 +204,7 @@ Example Commands:
         if args.predict:
             run_prediction_example()
         
-        print("\n✓ Requested operations completed successfully!")
+        print("\n[OK] Requested operations completed successfully!")
         
     except Exception as e:
         logger.error(f"Pipeline failed with error: {e}")
