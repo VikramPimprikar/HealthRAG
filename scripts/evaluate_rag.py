@@ -28,6 +28,12 @@ BACKEND_DIR = BASE_DIR / "backend"
 sys.path.insert(0, str(BACKEND_DIR))
 sys.path.insert(0, str(BASE_DIR))
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from app.rag.enhanced_rag_pipeline import MedicalRAGService
 from app.rag.rag_evaluator import RAGEvaluator
 

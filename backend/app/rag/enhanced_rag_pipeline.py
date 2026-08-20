@@ -355,10 +355,10 @@ class MedicalRAGService:
 
         return evidence_list
 
-    def answer_query(self, query: str, user_id: str = "guest", top_k: int = 5) -> Dict[str, Any]:
+    def answer_query(self, query: str, user_id: str = "guest", top_k: int = 5, bypass_structured: bool = False) -> Dict[str, Any]:
         """
         Execute full grounded RAG pipeline:
-        1. Check for Structured Patient Analytics & Exact Patient Lookups (100% Deterministic).
+        1. Check for Structured Patient Analytics & Exact Patient Lookups (if not bypassed).
         2. Pre-filter query for clinical domain validity.
         3. Retrieve top-K evidence chunks from FAISS.
         4. Check relevance threshold and anti-hallucination guardrails.
@@ -381,31 +381,32 @@ class MedicalRAGService:
         # -------------------------------------------------------------
         # STEP 1: Structured Patient Data Queries & Exact Patient Lookups
         # -------------------------------------------------------------
-        try:
-            structured_engine = get_structured_engine()
-            structured_intent = structured_engine.detect_structured_query_intent(query_cleaned)
-            if structured_intent:
-                struct_res = structured_engine.execute_structured_query(query_cleaned)
-                if (
-                    struct_res.get("success", False)
-                    or struct_res.get("query_type", "").startswith("specific_patient")
-                    or struct_res.get("query_type", "").startswith("structured")
-                ):
-                    ans_text = struct_res["answer"]
-                    evidence_payload = struct_res.get("retrieved_evidence", [])
-                    return {
-                        "query": query_cleaned,
-                        "user_id": user_id,
-                        "answer": ans_text,
-                        "retrieved_evidence": evidence_payload,
-                        "evidence_hash": sha256_hash(ans_text),
-                        "has_relevant_evidence": struct_res.get("has_relevant_evidence", True),
-                        "retrieved_count": len(evidence_payload),
-                        "is_mismatch": False,
-                        "query_type": struct_res.get("query_type", "structured_data")
-                    }
-        except Exception as e:
-            print(f"Structured engine query routing error: {e}")
+        if not bypass_structured:
+            try:
+                structured_engine = get_structured_engine()
+                structured_intent = structured_engine.detect_structured_query_intent(query_cleaned)
+                if structured_intent:
+                    struct_res = structured_engine.execute_structured_query(query_cleaned)
+                    if (
+                        struct_res.get("success", False)
+                        or struct_res.get("query_type", "").startswith("specific_patient")
+                        or struct_res.get("query_type", "").startswith("structured")
+                    ):
+                        ans_text = struct_res["answer"]
+                        evidence_payload = struct_res.get("retrieved_evidence", [])
+                        return {
+                            "query": query_cleaned,
+                            "user_id": user_id,
+                            "answer": ans_text,
+                            "retrieved_evidence": evidence_payload,
+                            "evidence_hash": sha256_hash(ans_text),
+                            "has_relevant_evidence": struct_res.get("has_relevant_evidence", True),
+                            "retrieved_count": len(evidence_payload),
+                            "is_mismatch": False,
+                            "query_type": struct_res.get("query_type", "structured_data")
+                        }
+            except Exception as e:
+                print(f"Structured engine query routing error: {e}")
 
         # -------------------------------------------------------------
         # STEP 2: Clinical Domain Validity Check
@@ -524,11 +525,10 @@ Please provide a clear, grounded clinical response directly addressing the query
         answer = ""
         if self.groq_client:
             candidate_models = [
-                "allam-2-7b",
-                "qwen/qwen3.6-27b",
                 "openai/gpt-oss-120b",
-                "llama-3.3-70b-versatile",
-                "llama-3.1-8b-instant"
+                "openai/gpt-oss-20b",
+                "qwen/qwen3.6-27b",
+                "allam-2-7b"
             ]
             for m in candidate_models:
                 try:
@@ -539,8 +539,8 @@ Please provide a clear, grounded clinical response directly addressing the query
                             {"role": "user", "content": user_prompt}
                         ],
                         temperature=0.2,
-                        max_tokens=650,
-                        timeout=15
+                        max_tokens=800,
+                        timeout=25
                     )
                     content = response.choices[0].message.content
                     if content and content.strip():

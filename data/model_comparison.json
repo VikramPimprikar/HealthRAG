@@ -1,5 +1,5 @@
 {
-  "evaluation_date": "2026-08-20 00:32:02",
+  "evaluation_date": "2026-08-20 21:20:27",
   "dataset_size": 10,
   "retrieval_k": 5,
   "models": {
@@ -8,12 +8,12 @@
       "dimension": 768,
       "domain": "Biomedical / PubMedBERT",
       "summary_metrics": {
-        "context_precision": 0.7433,
-        "context_recall": 0.95,
-        "faithfulness": 1.0,
-        "answer_relevancy": 0.9,
-        "overall_rag_score": 0.8983,
-        "average_latency_sec": 4.61,
+        "context_precision": 0.125,
+        "context_recall": 0.2,
+        "faithfulness": 0.1,
+        "answer_relevancy": 0.4165,
+        "overall_rag_score": 0.3403,
+        "average_latency_sec": 8.565,
         "total_samples": 10
       },
       "sample_results": [
@@ -21,145 +21,239 @@
           "id": "EVAL_001",
           "category": "Patient_Lookup",
           "question": "What are the clinical findings, resting blood pressure, and cholesterol level for patient P1007?",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.763,
-          "retrieved_patient_ids": []
+          "generated_answer": "**Patient\u202fP1007 (Priya Sharma,\u202f57\u202fy, Female)**  \n\n| Clinical finding | Value |\n|------------------|-------|\n| **Chest\u2011pain type** | Asymptomatic (Type\u202f4) |\n| **Resting blood pressure** | **120\u202fmm\u202fHg** |\n| **Serum cholesterol** | **354\u202fmg/dL** |\n| **Fasting blood\u2011sugar** | Normal (\u2264120\u202fmg/dL) |\n| **Resting ECG** | Normal |\n| **Maximum heart rate (exercise)** | 163\u202fbpm |\n| **Exercise\u2011induced angina** | Present |\n| **ST\u2011depression (oldpeak)** | 0.6\u202fmm |\n| **Slope of ST segment** | Upsloping |\n| **Diagnosis** | Healthy / No coronary artery disease (CAD) |\n\nThese values are taken directly from the verified patient record for P1007.",
+          "retrieved_contexts": [
+            "Patient ID P1007, Name Priya Sharma, aged 57 years with sex value Female, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 354.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 163.0, exercise induced angina True, oldpeak value 0.6, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1095, Name Priya Verma, aged 52 years with sex value Male, chest pain type asymptomatic, resting blood pressure 128.0 mmHg, cholesterol level 255.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 161.0, exercise induced angina True, oldpeak value 0.0, slope value upsloping, ca value 1.0, thal value reversable defect, and diagnosis outcome 1.",
+            "Patient ID P1097, Name Krishna Kulkarni, aged 60 years with sex value Female, chest pain type asymptomatic, resting blood pressure 150.0 mmHg, cholesterol level 258.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 157.0, exercise induced angina False, oldpeak value 2.6, slope value flat, ca value 2.0, thal value reversable defect, and diagnosis outcome 3.",
+            "Patient ID P1081, Name Neha Verma, aged 53 years with sex value Female, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 264.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 143.0, exercise induced angina False, oldpeak value 0.4, slope value flat, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1044, Name Neha Kapoor, aged 61 years with sex value Female, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 330.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 169.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 1."
+          ],
+          "reference_answer": "Patient P1007 (Priya Sharma, 57-year-old female) presents with asymptomatic chest pain, a resting blood pressure of 120.0 mmHg, a significantly elevated serum cholesterol level of 354.0 mg/dL, normal fasting blood sugar, normal resting ECG, maximum heart rate of 163.0 bpm, positive exercise-induced angina, an ST depression (oldpeak) of 0.6 with upsloping slope, and a diagnosis outcome of 0 (No CAD / Healthy).",
+          "reference_contexts": [
+            "Patient ID P1007, Name Priya Sharma, aged 57 years with sex value Female, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 354.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 163.0, exercise induced angina True, oldpeak value 0.6, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.6577,
+          "overall_score": 0.6577,
+          "latency_sec": 4.917
         },
         {
           "id": "EVAL_002",
           "category": "Disease_Severity",
           "question": "Which patients have severe coronary artery disease (outcome 3 or 4) with marked ST depression?",
-          "context_precision": 0.4778,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.8319,
-          "latency_sec": 0.834,
-          "retrieved_patient_ids": [
-            "KB_003",
-            "KB_001",
-            "P1596",
-            "P1676",
-            "P1593"
-          ]
+          "generated_answer": "Based on the verified patient records provided, none of the listed patients meet the criteria of **severe coronary artery disease (diagnostic outcome\u202f3 or\u202f4)** combined with **marked ST\u2011segment depression**:\n\n| Patient ID | Diagnosis (CAD class) | ST\u2011depression (oldpeak) | Slope |\n|------------|-----------------------|------------------------|-------|\n| **P1596**  | Mild CAD (Class\u202f1)    | 1.0\u202fmm (flat)          | flat |\n| **P1676**  | Mild CAD (Class\u202f1)    | 1.1\u202fmm (downsloping)   | downsloping |\n| **P1593**  | Mild CAD (Class\u202f1)    | 0.0\u202fmm (flat)          | flat |\n\nAll three patients are classified as **Mild CAD (Class\u202f1)**, not as severe disease (outcome\u202f3 or\u202f4). Therefore, there are **no patients in the current dataset** who have severe CAD with marked ST\u2011segment depression.",
+          "retrieved_contexts": [
+            "Mechanisms and Clinical Significance of ST-Segment Depression: ST-segment depression (measured as the 'oldpeak' value in millimeters on ECG during exercise stress testing) is an electrocardiographic indicator of subendocardial myocardial ischemia. During cardiac stress or exercise, myocardial oxygen demand increases. When stenosed coronary arteries cannot supply adequate blood flow, the subendocardium becomes ischemic, altering the electrical potential during ventricular repolarization. Significant ST depression is defined as horizontal or downsloping displacement >= 1.0 mm (0.1 mV) occurring 60 to 80 ms after the J-point. Downsloping ST depression indicates severe multi-vessel CAD and high cardiovascular risk, whereas flat ST depression indicates moderate ischemia, and upsloping ST depression may represent milder ischemia or rapid tachycardia.",
+            "Symptoms of Heart Disease and Coronary Artery Disease: Common symptoms of coronary artery disease (CAD) and heart disease include chest pain or discomfort (angina pectoris), pressure, tightness, or squeezing sensations in the chest or arms that may radiate to the neck, jaw, shoulder, or back. Additional symptoms include shortness of breath (dyspnea) during exertion or rest, unexplained fatigue, lightheadedness, dizziness, palpitations, cold sweats, and swelling in the legs, ankles, or feet (edema). In some patients, especially women and elderly individuals, symptoms may be atypical, presenting as nausea, indigestion, epigastric discomfort, or silent ischemia without classic chest pain.",
+            "Patient ID P1596, Name Sai Pimprikar, aged 65 years with sex value Male, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 275.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 115.0, exercise induced angina True, oldpeak value 1.0, slope value flat, ca value nan, thal value nan, and diagnosis outcome 1.",
+            "Patient ID P1676, Name Sai Joshi, aged 60 years with sex value Male, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 0.0 mg/dL, fasting blood sugar nan, rest ECG result st-t abnormality, maximum heart rate 130.0, exercise induced angina True, oldpeak value 1.1, slope value downsloping, ca value 1.0, thal value nan, and diagnosis outcome 1.",
+            "Patient ID P1593, Name Aditya Pimprikar, aged 54 years with sex value Female, chest pain type non-anginal, resting blood pressure 130.0 mmHg, cholesterol level 294.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 100.0, exercise induced angina True, oldpeak value 0.0, slope value flat, ca value nan, thal value nan, and diagnosis outcome 1."
+          ],
+          "reference_answer": "Patients with severe to critical CAD include: Patient P1006 (62-year-old female, diagnosis outcome 3, oldpeak 3.6 downsloping, cholesterol 268.0 mg/dL), Patient P1023 (58-year-old male, diagnosis outcome 3, oldpeak 3.2, cholesterol 224.0 mg/dL), and Patient P1024 (60-year-old male, diagnosis outcome 4 - very severe CAD, oldpeak 2.4 flat slope, exercise-induced angina True, and LV hypertrophy).",
+          "reference_contexts": [
+            "Patient ID P1006, Name Kavya Iyer, aged 62 years with sex value Female, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 268.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 160.0, exercise induced angina False, oldpeak value 3.6, slope value downsloping, ca value 2.0, thal value normal, and diagnosis outcome 3.",
+            "Patient ID P1023, Name Reyansh Reddy, aged 58 years with sex value Male, chest pain type non-anginal, resting blood pressure 132.0 mmHg, cholesterol level 224.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 173.0, exercise induced angina False, oldpeak value 3.2, slope value upsloping, ca value 2.0, thal value reversable defect, and diagnosis outcome 3.",
+            "Patient ID P1024, Name Krishna Iyer, aged 60 years with sex value Male, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 206.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 132.0, exercise induced angina True, oldpeak value 2.4, slope value flat, ca value 2.0, thal value reversable defect, and diagnosis outcome 4."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.8856,
+          "overall_score": 0.8856,
+          "latency_sec": 1.279
         },
         {
           "id": "EVAL_003",
           "category": "Patient_Lookup",
           "question": "What is the diagnosis outcome, chest pain type, and ECG result for patient P1001?",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.001,
-          "retrieved_patient_ids": []
+          "generated_answer": "I could not find sufficient information in the available medical knowledge base to answer this question.",
+          "retrieved_contexts": [
+            "Patient ID P1080, Name Aditya Joshi, aged 45 years with sex value Male, chest pain type asymptomatic, resting blood pressure 104.0 mmHg, cholesterol level 208.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 148.0, exercise induced angina True, oldpeak value 3.0, slope value flat, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1083, Name Aditya Joshi, aged 68 years with sex value Male, chest pain type non-anginal, resting blood pressure 180.0 mmHg, cholesterol level 274.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 150.0, exercise induced angina True, oldpeak value 1.6, slope value flat, ca value 0.0, thal value reversable defect, and diagnosis outcome 3.",
+            "Patient ID P1048, Name Ananya Joshi, aged 65 years with sex value Female, chest pain type non-anginal, resting blood pressure 140.0 mmHg, cholesterol level 417.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 157.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 1.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1081, Name Neha Verma, aged 53 years with sex value Female, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 264.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 143.0, exercise induced angina False, oldpeak value 0.4, slope value flat, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1008, Name Sneha Sharma, aged 63 years with sex value Male, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 254.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 147.0, exercise induced angina False, oldpeak value 1.4, slope value flat, ca value 1.0, thal value reversable defect, and diagnosis outcome 2."
+          ],
+          "reference_answer": "Patient P1001 (Arjun Kulkarni, 67-year-old male) has asymptomatic chest pain, resting ECG showing left ventricular hypertrophy (LVH), resting blood pressure of 160.0 mmHg, serum cholesterol of 286.0 mg/dL, positive exercise-induced angina, maximum heart rate of 108.0 bpm, oldpeak of 1.5 with flat slope, and a diagnosis outcome of 2 (Moderate CAD).",
+          "reference_contexts": [
+            "Patient ID P1001, Name Arjun Kulkarni, aged 67 years with sex value Male, chest pain type asymptomatic, resting blood pressure 160.0 mmHg, cholesterol level 286.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 108.0, exercise induced angina True, oldpeak value 1.5, slope value flat, ca value 3.0, thal value normal, and diagnosis outcome 2."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.0,
+          "overall_score": 0.0,
+          "latency_sec": 1.32
         },
         {
           "id": "EVAL_004",
           "category": "Biomarker_Cohort",
           "question": "Identify patients with hypercholesterolemia with serum cholesterol level exceeding 280 mg/dL and exercise-induced angina.",
+          "generated_answer": "I could not find sufficient information in the available medical knowledge base to answer this question.",
+          "retrieved_contexts": [
+            "Causes and Pathophysiology of High Cholesterol (Hypercholesterolemia): High serum cholesterol (hypercholesterolemia, typically defined as total cholesterol > 200 mg/dL or LDL > 130 mg/dL, with severe hypercholesterolemia exceeding 240-280 mg/dL) is caused by a combination of genetic factors (such as familial hypercholesterolemia and LDL receptor mutations) and lifestyle factors. Major lifestyle causes include diets rich in saturated and trans fats, physical inactivity, obesity, and smoking. Secondary medical causes include type 2 diabetes mellitus, hypothyroidism, chronic kidney disease, and cholestatic liver disease. Elevated low-density lipoprotein (LDL) particles infiltrate arterial endothelial walls, undergoing oxidative modification and promoting foam cell formation, atheromatous plaque development, and coronary artery narrowing.",
+            "Exercise-Induced Angina and Myocardial Ischemia Pathophysiology: Exercise-induced angina (exang) occurs when physical exertion increases heart rate, systolic blood pressure, and left ventricular contractility, sharply escalating myocardial oxygen consumption. In patients with fixed atherosclerotic coronary stenoses, coronary vascular reserve is exhausted, preventing compensatory vasodilation. The resulting supply-demand mismatch causes acute transient subendocardial ischemia, lactic acidosis, and activation of cardiac nociceptive fibers perceived as angina pectoris. The presence of exercise-induced angina strongly correlates with obstructive coronary artery disease.",
+            "Symptoms of Heart Disease and Coronary Artery Disease: Common symptoms of coronary artery disease (CAD) and heart disease include chest pain or discomfort (angina pectoris), pressure, tightness, or squeezing sensations in the chest or arms that may radiate to the neck, jaw, shoulder, or back. Additional symptoms include shortness of breath (dyspnea) during exertion or rest, unexplained fatigue, lightheadedness, dizziness, palpitations, cold sweats, and swelling in the legs, ankles, or feet (edema). In some patients, especially women and elderly individuals, symptoms may be atypical, presenting as nausea, indigestion, epigastric discomfort, or silent ischemia without classic chest pain.",
+            "Cardiovascular Disease Risk Factors and Prevention: Major non-modifiable risk factors for cardiovascular disease include advancing age (especially men > 45 and women > 55), male biological sex, and family history of premature coronary heart disease. Modifiable risk factors include systemic hypertension (resting blood pressure > 130/80 mmHg), hyperlipidemia (elevated total cholesterol and LDL, low HDL), cigarette smoking, insulin resistance and diabetes mellitus (fasting blood sugar > 120 mg/dL), obesity (elevated BMI), sedentary lifestyle, chronic psychological stress, and unhealthy diet. Managing blood pressure, lowering LDL cholesterol, controlling blood glucose, exercising regularly, and smoking cessation substantially reduce cardiovascular morbidity.",
+            "Impact of Elevated Fasting Blood Sugar and Diabetes on Coronary Vasculature: Fasting blood sugar (fbs) exceeding 120 mg/dL indicates impaired fasting glucose or overt diabetes mellitus. Chronic hyperglycemia accelerates non-enzymatic glycation of arterial proteins, stimulates reactive oxygen species (ROS), induces endothelial nitric oxide synthase dysfunction, and promotes systemic low-grade vascular inflammation. Diabetic patients with coronary artery disease frequently suffer from diffuse multi-vessel involvement, higher incidence of silent myocardial infarction due to autonomic neuropathy, and poorer post-revascularization outcomes."
+          ],
+          "reference_answer": "Patients meeting both criteria are Patient P1001 (cholesterol 286.0 mg/dL, exercise induced angina True, diagnosis outcome 2) and Patient P1007 (cholesterol 354.0 mg/dL, exercise induced angina True, diagnosis outcome 0).",
+          "reference_contexts": [
+            "Patient ID P1001, Name Arjun Kulkarni, aged 67 years with sex value Male, chest pain type asymptomatic, resting blood pressure 160.0 mmHg, cholesterol level 286.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 108.0, exercise induced angina True, oldpeak value 1.5, slope value flat, ca value 3.0, thal value normal, and diagnosis outcome 2.",
+            "Patient ID P1007, Name Priya Sharma, aged 57 years with sex value Female, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 354.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 163.0, exercise induced angina True, oldpeak value 0.6, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0."
+          ],
           "context_precision": 0.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.7125,
-          "latency_sec": 12.461,
-          "retrieved_patient_ids": [
-            "KB_002",
-            "KB_006",
-            "KB_001",
-            "KB_004",
-            "KB_008"
-          ]
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.0,
+          "overall_score": 0.0,
+          "latency_sec": 9.972
         },
         {
           "id": "EVAL_005",
           "category": "Patient_Lookup",
           "question": "What are the clinical indicators and fasting blood sugar status for patient P1000?",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.002,
-          "retrieved_patient_ids": []
+          "generated_answer": "I could not find sufficient information in the available medical knowledge base to answer this question.",
+          "retrieved_contexts": [
+            "Patient ID P1060, Name Reyansh Kapoor, aged 51 years with sex value Female, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 305.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 142.0, exercise induced angina True, oldpeak value 1.2, slope value flat, ca value 0.0, thal value reversable defect, and diagnosis outcome 2.",
+            "Patient ID P1097, Name Krishna Kulkarni, aged 60 years with sex value Female, chest pain type asymptomatic, resting blood pressure 150.0 mmHg, cholesterol level 258.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 157.0, exercise induced angina False, oldpeak value 2.6, slope value flat, ca value 2.0, thal value reversable defect, and diagnosis outcome 3.",
+            "Patient ID P1002, Name Ishaan Kapoor, aged 67 years with sex value Male, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 229.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 129.0, exercise induced angina True, oldpeak value 2.6, slope value flat, ca value 2.0, thal value reversable defect, and diagnosis outcome 1.",
+            "Patient ID P1068, Name Krishna Gupta, aged 59 years with sex value Male, chest pain type asymptomatic, resting blood pressure 170.0 mmHg, cholesterol level 326.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 140.0, exercise induced angina True, oldpeak value 3.4, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 2.",
+            "Patient ID P1385, Name Krishna Kapoor, aged 46 years with sex value Male, chest pain type asymptomatic, resting blood pressure 110.0 mmHg, cholesterol level 238.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 140.0, exercise induced angina True, oldpeak value 1.0, slope value flat, ca value nan, thal value normal, and diagnosis outcome 0."
+          ],
+          "reference_answer": "Patient P1000 (Aisha Joshi, 63-year-old male) presents with typical angina chest pain, resting blood pressure of 145.0 mmHg, cholesterol of 233.0 mg/dL, elevated fasting blood sugar (True, >120 mg/dL), resting ECG showing left ventricular hypertrophy, maximum heart rate 150.0 bpm, ST depression oldpeak 2.3 downsloping, and diagnosis outcome 0.",
+          "reference_contexts": [
+            "Patient ID P1000, Name Aisha Joshi, aged 63 years with sex value Male, chest pain type typical angina, resting blood pressure 145.0 mmHg, cholesterol level 233.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 150.0, exercise induced angina False, oldpeak value 2.3, slope value downsloping, ca value 0.0, thal value fixed defect, and diagnosis outcome 0."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.0,
+          "overall_score": 0.0,
+          "latency_sec": 8.736
         },
         {
           "id": "EVAL_006",
           "category": "Symptom_Risk",
           "question": "Which patients present with atypical angina chest pain and normal resting ECG?",
-          "context_precision": 0.4778,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.8319,
-          "latency_sec": 16.454,
-          "retrieved_patient_ids": [
-            "KB_005",
-            "KB_001",
-            "P1848",
-            "P1348",
-            "P1319"
-          ]
+          "generated_answer": "**Patients who have atypical angina (Type\u202f2) and a normal resting ECG**\n\n| Patient ID | Age | Sex | Chest\u2011pain type | Resting ECG |\n|------------|-----|-----|-----------------|-------------|\n| **P1848** | 61\u202fy | Female | Atypical Angina (Type\u202f2) | **Normal** |\n| **P1319** | 36\u202fy | Male   | Atypical Angina (Type\u202f2) | **Normal** |\n\nThese two records meet both criteria (atypical angina\u202f+\u202fnormal resting ECG).",
+          "retrieved_contexts": [
+            "Chest Pain Classifications: Typical, Atypical, Non-Anginal, and Asymptomatic: Chest pain is clinically categorized into four distinct types: (1) Typical Angina (Type 1): substernal chest discomfort with characteristic quality and duration, provoked by exertion or emotional stress, and relieved by rest or nitroglycerin. (2) Atypical Angina (Type 2): chest discomfort meeting two of the three typical angina criteria, often seen in women and younger cohorts. (3) Non-Anginal Pain (Type 3): chest discomfort meeting only one or none of the classic features, frequently musculoskeletal or gastrointestinal in origin. (4) Asymptomatic / Silent Ischemia (Type 4): absence of angina despite documented myocardial hypoperfusion or CAD on diagnostic testing.",
+            "Symptoms of Heart Disease and Coronary Artery Disease: Common symptoms of coronary artery disease (CAD) and heart disease include chest pain or discomfort (angina pectoris), pressure, tightness, or squeezing sensations in the chest or arms that may radiate to the neck, jaw, shoulder, or back. Additional symptoms include shortness of breath (dyspnea) during exertion or rest, unexplained fatigue, lightheadedness, dizziness, palpitations, cold sweats, and swelling in the legs, ankles, or feet (edema). In some patients, especially women and elderly individuals, symptoms may be atypical, presenting as nausea, indigestion, epigastric discomfort, or silent ischemia without classic chest pain.",
+            "Patient ID P1848, Name Ananya Verma, aged 61 years with sex value Female, chest pain type atypical angina, resting blood pressure 140.0 mmHg, cholesterol level 298.0 mg/dL, fasting blood sugar True, rest ECG result normal, maximum heart rate 120.0, exercise induced angina True, oldpeak value 0.0, slope value nan, ca value nan, thal value reversable defect, and diagnosis outcome 0.",
+            "Patient ID P1348, Name Aditya Pimprikar, aged 41 years with sex value Female, chest pain type atypical angina, resting blood pressure 110.0 mmHg, cholesterol level 250.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 142.0, exercise induced angina False, oldpeak value 0.0, slope value nan, ca value nan, thal value nan, and diagnosis outcome 0.",
+            "Patient ID P1319, Name Ananya Verma, aged 36 years with sex value Male, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 166.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 180.0, exercise induced angina False, oldpeak value 0.0, slope value nan, ca value nan, thal value nan, and diagnosis outcome 0."
+          ],
+          "reference_answer": "Patients presenting with atypical angina and normal resting ECG include Patient P1005 (56 male, BP 120, chol 236, oldpeak 0.8, outcome 0), Patient P1013 (44 male, BP 120, chol 263, oldpeak 0.0, outcome 0), and Patient P1016 (48 male, BP 110, chol 229, oldpeak 1.0, outcome 1).",
+          "reference_contexts": [
+            "Patient ID P1005, Name Arjun Kapoor, aged 56 years with sex value Male, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 236.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 178.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1013, Name Reyansh Kapoor, aged 44 years with sex value Male, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 263.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 173.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 0.",
+            "Patient ID P1016, Name Ananya Kapoor, aged 48 years with sex value Male, chest pain type atypical angina, resting blood pressure 110.0 mmHg, cholesterol level 229.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 168.0, exercise induced angina False, oldpeak value 1.0, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.8227,
+          "overall_score": 0.2742,
+          "latency_sec": 12.101
         },
         {
           "id": "EVAL_007",
           "category": "Patient_Lookup",
           "question": "What is the cardiovascular profile, exercise angina status, and ST depression for patient P1009?",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.001,
-          "retrieved_patient_ids": []
+          "generated_answer": "I could not find sufficient information in the available medical knowledge base to answer this question.",
+          "retrieved_contexts": [
+            "Patient ID P1083, Name Aditya Joshi, aged 68 years with sex value Male, chest pain type non-anginal, resting blood pressure 180.0 mmHg, cholesterol level 274.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 150.0, exercise induced angina True, oldpeak value 1.6, slope value flat, ca value 0.0, thal value reversable defect, and diagnosis outcome 3.",
+            "Patient ID P1080, Name Aditya Joshi, aged 45 years with sex value Male, chest pain type asymptomatic, resting blood pressure 104.0 mmHg, cholesterol level 208.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 148.0, exercise induced angina True, oldpeak value 3.0, slope value flat, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1045, Name Sai Joshi, aged 58 years with sex value Male, chest pain type non-anginal, resting blood pressure 112.0 mmHg, cholesterol level 230.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 165.0, exercise induced angina False, oldpeak value 2.5, slope value flat, ca value 1.0, thal value reversable defect, and diagnosis outcome 4.",
+            "Mechanisms and Clinical Significance of ST-Segment Depression: ST-segment depression (measured as the 'oldpeak' value in millimeters on ECG during exercise stress testing) is an electrocardiographic indicator of subendocardial myocardial ischemia. During cardiac stress or exercise, myocardial oxygen demand increases. When stenosed coronary arteries cannot supply adequate blood flow, the subendocardium becomes ischemic, altering the electrical potential during ventricular repolarization. Significant ST depression is defined as horizontal or downsloping displacement >= 1.0 mm (0.1 mV) occurring 60 to 80 ms after the J-point. Downsloping ST depression indicates severe multi-vessel CAD and high cardiovascular risk, whereas flat ST depression indicates moderate ischemia, and upsloping ST depression may represent milder ischemia or rapid tachycardia.",
+            "Patient ID P1593, Name Aditya Pimprikar, aged 54 years with sex value Female, chest pain type non-anginal, resting blood pressure 130.0 mmHg, cholesterol level 294.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 100.0, exercise induced angina True, oldpeak value 0.0, slope value flat, ca value nan, thal value nan, and diagnosis outcome 1."
+          ],
+          "reference_answer": "Patient P1009 (Rohan Mehta, 53-year-old male) has asymptomatic chest pain, resting blood pressure 140.0 mmHg, cholesterol 203.0 mg/dL, elevated fasting blood sugar (>120 mg/dL), resting ECG showing LV hypertrophy, maximum heart rate 155.0 bpm, positive exercise-induced angina (True), an oldpeak ST depression of 3.1 with downsloping slope, and diagnosis outcome 1 (Mild CAD).",
+          "reference_contexts": [
+            "Patient ID P1009, Name Rohan Mehta, aged 53 years with sex value Male, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 203.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 155.0, exercise induced angina True, oldpeak value 3.1, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1."
+          ],
+          "context_precision": 0.25,
+          "context_recall": 1.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.0,
+          "overall_score": 0.3125,
+          "latency_sec": 12.765
         },
         {
           "id": "EVAL_008",
           "category": "Biomarker_Cohort",
           "question": "Which patients have resting systolic blood pressure exceeding 150 mmHg indicating stage 2 hypertension?",
-          "context_precision": 0.4778,
-          "context_recall": 0.95,
+          "generated_answer": "**Patient meeting the criterion (resting systolic BP\u202f>\u202f150\u202fmmHg, i.e., stage\u202f2 hypertension):**\n\n| Patient ID | Resting Systolic BP (mmHg) | Hypertension Stage* |\n|------------|----------------------------|----------------------|\n| **P1898**  | 160.0                      | Stage\u202f2 (\u2265\u202f140\u202fmmHg) |\n\n*According to the Hypertension Guidelines excerpt, stage\u202f2 hypertension is defined as a systolic pressure\u202f\u2265\u202f140\u202fmmHg (or diastolic\u202f\u2265\u202f90\u202fmmHg). The patient\u2019s systolic pressure of 160\u202fmmHg clearly exceeds the 150\u202fmmHg threshold specified in the query.  \n\n**Other patients** (P1264 with 138\u202fmmHg and P1825 with 120\u202fmmHg) do not meet the >150\u202fmmHg criterion.",
+          "retrieved_contexts": [
+            "Hypertension Guidelines and Hemodynamic Impact on Cardiac Function: Systemic arterial hypertension is categorized into Stage 1 (systolic BP 130-139 mmHg or diastolic 80-89 mmHg) and Stage 2 (systolic BP >= 140 mmHg or diastolic >= 90 mmHg). Chronic systolic blood pressure elevation exceeding 140-160 mmHg increases left ventricular afterload, promoting progressive concentric left ventricular hypertrophy (LVH), coronary microvascular remodeling, accelerated arterial stiffness, and significantly increased risk of congestive heart failure, ischemic stroke, and myocardial infarction.",
+            "Cardiovascular Disease Risk Factors and Prevention: Major non-modifiable risk factors for cardiovascular disease include advancing age (especially men > 45 and women > 55), male biological sex, and family history of premature coronary heart disease. Modifiable risk factors include systemic hypertension (resting blood pressure > 130/80 mmHg), hyperlipidemia (elevated total cholesterol and LDL, low HDL), cigarette smoking, insulin resistance and diabetes mellitus (fasting blood sugar > 120 mg/dL), obesity (elevated BMI), sedentary lifestyle, chronic psychological stress, and unhealthy diet. Managing blood pressure, lowering LDL cholesterol, controlling blood glucose, exercising regularly, and smoking cessation substantially reduce cardiovascular morbidity.",
+            "Patient ID P1264, Name Arjun Sharma, aged 61 years with sex value Male, chest pain type asymptomatic, resting blood pressure 138.0 mmHg, cholesterol level 166.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 125.0, exercise induced angina True, oldpeak value 3.6, slope value flat, ca value 1.0, thal value normal, and diagnosis outcome 4.",
+            "Patient ID P1898, Name Ishaan Sharma, aged 58 years with sex value Male, chest pain type asymptomatic, resting blood pressure 160.0 mmHg, cholesterol level 256.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 113.0, exercise induced angina True, oldpeak value 1.0, slope value upsloping, ca value nan, thal value nan, and diagnosis outcome 3.",
+            "Patient ID P1825, Name Kavya Sharma, aged 61 years with sex value Male, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 282.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 135.0, exercise induced angina True, oldpeak value 4.0, slope value downsloping, ca value nan, thal value fixed defect, and diagnosis outcome 3."
+          ],
+          "reference_answer": "Patients with resting blood pressure exceeding 150 mmHg include Patient P1001 (resting BP 160.0 mmHg, cholesterol 286.0 mg/dL, outcome 2) and Patient P1014 (resting BP 172.0 mmHg, non-anginal chest pain, cholesterol 199.0 mg/dL, outcome 0).",
+          "reference_contexts": [
+            "Patient ID P1001, Name Arjun Kulkarni, aged 67 years with sex value Male, chest pain type asymptomatic, resting blood pressure 160.0 mmHg, cholesterol level 286.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 108.0, exercise induced angina True, oldpeak value 1.5, slope value flat, ca value 3.0, thal value normal, and diagnosis outcome 2.",
+            "Patient ID P1014, Name Rahul Gupta, aged 52 years with sex value Male, chest pain type non-anginal, resting blood pressure 172.0 mmHg, cholesterol level 199.0 mg/dL, fasting blood sugar True, rest ECG result normal, maximum heart rate 162.0, exercise induced angina False, oldpeak value 0.5, slope value upsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 0."
+          ],
+          "context_precision": 1.0,
+          "context_recall": 1.0,
           "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.8319,
-          "latency_sec": 15.556,
-          "retrieved_patient_ids": [
-            "KB_007",
-            "KB_004",
-            "P1264",
-            "P1898",
-            "P1825"
-          ]
+          "answer_relevancy": 0.9188,
+          "overall_score": 0.9797,
+          "latency_sec": 11.325
         },
         {
           "id": "EVAL_009",
           "category": "Patient_Lookup",
           "question": "What are the clinical findings, age, and maximum heart rate for patient P1003?",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.001,
-          "retrieved_patient_ids": []
+          "generated_answer": "I could not find sufficient information in the available medical knowledge base to answer this question.",
+          "retrieved_contexts": [
+            "Patient ID P1040, Name Sneha Pimprikar, aged 65 years with sex value Female, chest pain type asymptomatic, resting blood pressure 150.0 mmHg, cholesterol level 225.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 114.0, exercise induced angina False, oldpeak value 1.0, slope value flat, ca value 3.0, thal value reversable defect, and diagnosis outcome 4.",
+            "Patient ID P1058, Name Sneha Patil, aged 54 years with sex value Male, chest pain type non-anginal, resting blood pressure 125.0 mmHg, cholesterol level 273.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 152.0, exercise induced angina False, oldpeak value 0.5, slope value downsloping, ca value 1.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1008, Name Sneha Sharma, aged 63 years with sex value Male, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 254.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 147.0, exercise induced angina False, oldpeak value 1.4, slope value flat, ca value 1.0, thal value reversable defect, and diagnosis outcome 2.",
+            "Patient ID P1062, Name Vivaan Pimprikar, aged 58 years with sex value Male, chest pain type asymptomatic, resting blood pressure 128.0 mmHg, cholesterol level 216.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 131.0, exercise induced angina True, oldpeak value 2.2, slope value flat, ca value 3.0, thal value reversable defect, and diagnosis outcome 1.",
+            "Patient ID P1009, Name Rohan Mehta, aged 53 years with sex value Male, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 203.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 155.0, exercise induced angina True, oldpeak value 3.1, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1."
+          ],
+          "reference_answer": "Patient P1003 (Kavya Iyer, 37-year-old male) presents with non-anginal chest pain, resting blood pressure of 130.0 mmHg, cholesterol of 250.0 mg/dL, normal resting ECG, a high maximum heart rate of 187.0 bpm, negative exercise-induced angina, oldpeak ST depression of 3.5 downsloping, and diagnosis outcome 0.",
+          "reference_contexts": [
+            "Patient ID P1003, Name Kavya Iyer, aged 37 years with sex value Male, chest pain type non-anginal, resting blood pressure 130.0 mmHg, cholesterol level 250.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 187.0, exercise induced angina False, oldpeak value 3.5, slope value downsloping, ca value 0.0, thal value normal, and diagnosis outcome 0."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.0,
+          "overall_score": 0.0,
+          "latency_sec": 13.842
         },
         {
           "id": "EVAL_010",
           "category": "Symptom_Risk",
           "question": "Identify patients with left ventricular hypertrophy on resting ECG and elevated fasting blood sugar.",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.033,
-          "retrieved_patient_ids": []
+          "generated_answer": "Based on the provided patient records:\n\n| Patient ID | Resting ECG | Fasting Blood Sugar |\n|------------|-------------|---------------------|\n| **P1247**  | LV hypertrophy | Normal (\u2264\u202f120\u202fmg/dL) |\n| **P1177**  | LV hypertrophy | Normal (\u2264\u202f120\u202fmg/dL) |\n\nBoth patients show left\u2011ventricular hypertrophy on the resting ECG, but neither has an elevated fasting blood\u2011sugar level (i.e., >\u202f120\u202fmg/dL).  \n\n**Therefore, none of the listed patients meet the combined criteria of LV hypertrophy on resting ECG **and** elevated fasting blood sugar.**",
+          "retrieved_contexts": [
+            "Impact of Elevated Fasting Blood Sugar and Diabetes on Coronary Vasculature: Fasting blood sugar (fbs) exceeding 120 mg/dL indicates impaired fasting glucose or overt diabetes mellitus. Chronic hyperglycemia accelerates non-enzymatic glycation of arterial proteins, stimulates reactive oxygen species (ROS), induces endothelial nitric oxide synthase dysfunction, and promotes systemic low-grade vascular inflammation. Diabetic patients with coronary artery disease frequently suffer from diffuse multi-vessel involvement, higher incidence of silent myocardial infarction due to autonomic neuropathy, and poorer post-revascularization outcomes.",
+            "Cardiovascular Disease Risk Factors and Prevention: Major non-modifiable risk factors for cardiovascular disease include advancing age (especially men > 45 and women > 55), male biological sex, and family history of premature coronary heart disease. Modifiable risk factors include systemic hypertension (resting blood pressure > 130/80 mmHg), hyperlipidemia (elevated total cholesterol and LDL, low HDL), cigarette smoking, insulin resistance and diabetes mellitus (fasting blood sugar > 120 mg/dL), obesity (elevated BMI), sedentary lifestyle, chronic psychological stress, and unhealthy diet. Managing blood pressure, lowering LDL cholesterol, controlling blood glucose, exercising regularly, and smoking cessation substantially reduce cardiovascular morbidity.",
+            "Mechanisms and Clinical Significance of ST-Segment Depression: ST-segment depression (measured as the 'oldpeak' value in millimeters on ECG during exercise stress testing) is an electrocardiographic indicator of subendocardial myocardial ischemia. During cardiac stress or exercise, myocardial oxygen demand increases. When stenosed coronary arteries cannot supply adequate blood flow, the subendocardium becomes ischemic, altering the electrical potential during ventricular repolarization. Significant ST depression is defined as horizontal or downsloping displacement >= 1.0 mm (0.1 mV) occurring 60 to 80 ms after the J-point. Downsloping ST depression indicates severe multi-vessel CAD and high cardiovascular risk, whereas flat ST depression indicates moderate ischemia, and upsloping ST depression may represent milder ischemia or rapid tachycardia.",
+            "Patient ID P1247, Name Priya Gupta, aged 47 years with sex value Male, chest pain type asymptomatic, resting blood pressure 110.0 mmHg, cholesterol level 275.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 118.0, exercise induced angina True, oldpeak value 1.0, slope value flat, ca value 1.0, thal value normal, and diagnosis outcome 1.",
+            "Patient ID P1177, Name Atharv Gupta, aged 56 years with sex value Male, chest pain type asymptomatic, resting blood pressure 132.0 mmHg, cholesterol level 184.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 105.0, exercise induced angina True, oldpeak value 2.1, slope value flat, ca value 1.0, thal value fixed defect, and diagnosis outcome 1."
+          ],
+          "reference_answer": "Patients presenting with both left ventricular hypertrophy on ECG and elevated fasting blood sugar (FBS > 120 mg/dL) include Patient P1000 (63 male, BP 145, typical angina), Patient P1009 (53 male, BP 140, exercise angina True, outcome 1), and Patient P1012 (56 male, BP 130, chol 256, exercise angina True, outcome 2).",
+          "reference_contexts": [
+            "Patient ID P1000, Name Aisha Joshi, aged 63 years with sex value Male, chest pain type typical angina, resting blood pressure 145.0 mmHg, cholesterol level 233.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 150.0, exercise induced angina False, oldpeak value 2.3, slope value downsloping, ca value 0.0, thal value fixed defect, and diagnosis outcome 0.",
+            "Patient ID P1009, Name Rohan Mehta, aged 53 years with sex value Male, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 203.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 155.0, exercise induced angina True, oldpeak value 3.1, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1.",
+            "Patient ID P1012, Name Meera Gupta, aged 56 years with sex value Male, chest pain type non-anginal, resting blood pressure 130.0 mmHg, cholesterol level 256.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 142.0, exercise induced angina True, oldpeak value 0.6, slope value flat, ca value 1.0, thal value fixed defect, and diagnosis outcome 2."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.8801,
+          "overall_score": 0.2934,
+          "latency_sec": 9.397
         }
       ]
     },
@@ -168,12 +262,12 @@
       "dimension": 384,
       "domain": "General Domain",
       "summary_metrics": {
-        "context_precision": 0.8717,
-        "context_recall": 0.95,
-        "faithfulness": 1.0,
-        "answer_relevancy": 0.9,
-        "overall_rag_score": 0.9304,
-        "average_latency_sec": 6.77,
+        "context_precision": 0.1,
+        "context_recall": 0.16,
+        "faithfulness": 0.1524,
+        "answer_relevancy": 0.6752,
+        "overall_rag_score": 0.4443,
+        "average_latency_sec": 11.608,
         "total_samples": 10
       },
       "sample_results": [
@@ -181,154 +275,248 @@
           "id": "EVAL_001",
           "category": "Patient_Lookup",
           "question": "What are the clinical findings, resting blood pressure, and cholesterol level for patient P1007?",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.006,
-          "retrieved_patient_ids": []
+          "generated_answer": "**Patient\u202fP1007 (Priya Sharma, 57\u202fy, Female)**  \n\n- **Clinical findings**  \n  - Chest\u2011pain type: Asymptomatic (Type\u202f4)  \n  - Exercise\u2011induced angina: Present  \n  - Resting ECG: Normal  \n  - ST\u2011depression (oldpeak): 0.6\u202fmm (upsloping slope)  \n  - Diagnosis: Healthy / No coronary artery disease (CAD)  \n\n- **Resting blood pressure:** 120\u202fmm\u202fHg  \n\n- **Serum cholesterol:** 354\u202fmg/dL  \n\nThese values are taken directly from the verified record for patient\u202fP1007.",
+          "retrieved_contexts": [
+            "Patient ID P1007, Name Priya Sharma, aged 57 years with sex value Female, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 354.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 163.0, exercise induced angina True, oldpeak value 0.6, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1050, Name Krishna Sharma, aged 41 years with sex value Female, chest pain type atypical angina, resting blood pressure 105.0 mmHg, cholesterol level 198.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 168.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 1.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1070, Name Krishna Iyer, aged 65 years with sex value Female, chest pain type non-anginal, resting blood pressure 155.0 mmHg, cholesterol level 269.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 148.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1032, Name Aditya Kapoor, aged 64 years with sex value Male, chest pain type non-anginal, resting blood pressure 140.0 mmHg, cholesterol level 335.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 158.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 1.",
+            "Patient ID P1009, Name Rohan Mehta, aged 53 years with sex value Male, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 203.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 155.0, exercise induced angina True, oldpeak value 3.1, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1."
+          ],
+          "reference_answer": "Patient P1007 (Priya Sharma, 57-year-old female) presents with asymptomatic chest pain, a resting blood pressure of 120.0 mmHg, a significantly elevated serum cholesterol level of 354.0 mg/dL, normal fasting blood sugar, normal resting ECG, maximum heart rate of 163.0 bpm, positive exercise-induced angina, an ST depression (oldpeak) of 0.6 with upsloping slope, and a diagnosis outcome of 0 (No CAD / Healthy).",
+          "reference_contexts": [
+            "Patient ID P1007, Name Priya Sharma, aged 57 years with sex value Female, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 354.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 163.0, exercise induced angina True, oldpeak value 0.6, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.8802,
+          "overall_score": 0.4401,
+          "latency_sec": 0.964
         },
         {
           "id": "EVAL_002",
           "category": "Disease_Severity",
           "question": "Which patients have severe coronary artery disease (outcome 3 or 4) with marked ST depression?",
-          "context_precision": 0.6792,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.8823,
-          "latency_sec": 17.699,
-          "retrieved_patient_ids": [
-            "KB_003",
-            "P1796",
-            "P1739",
-            "P1307",
-            "P1315"
-          ]
+          "generated_answer": "Based on the verified patient records provided:\n\n| Patient ID | Diagnosis (outcome) | ST\u2011depression (oldpeak) | Slope |\n|------------|---------------------|------------------------|-------|\n| P1796      | Moderate CAD (Class\u202f2) | 3.0\u202fmm (marked) | flat |\n| P1739      | Healthy / No CAD (0)   | 0.0\u202fmm | \u2013 |\n| P1307      | Healthy / No CAD (0)   | 0.0\u202fmm | \u2013 |\n| P1315     \u202f| Healthy / No CAD (0)   | 0.0\u202fmm | \u2013 |\n\nNone of the patients listed have a diagnosis of severe coronary artery disease (outcome\u202f3 or\u202f4). Therefore, **there are no patients in the available data who both have severe CAD (outcome\u202f3 or\u202f4) and exhibit marked ST\u2011segment depression**.",
+          "retrieved_contexts": [
+            "Mechanisms and Clinical Significance of ST-Segment Depression: ST-segment depression (measured as the 'oldpeak' value in millimeters on ECG during exercise stress testing) is an electrocardiographic indicator of subendocardial myocardial ischemia. During cardiac stress or exercise, myocardial oxygen demand increases. When stenosed coronary arteries cannot supply adequate blood flow, the subendocardium becomes ischemic, altering the electrical potential during ventricular repolarization. Significant ST depression is defined as horizontal or downsloping displacement >= 1.0 mm (0.1 mV) occurring 60 to 80 ms after the J-point. Downsloping ST depression indicates severe multi-vessel CAD and high cardiovascular risk, whereas flat ST depression indicates moderate ischemia, and upsloping ST depression may represent milder ischemia or rapid tachycardia.",
+            "Patient ID P1796, Name Krishna Joshi, aged 49 years with sex value Male, chest pain type typical angina, resting blood pressure 130.0 mmHg, cholesterol level 0.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 145.0, exercise induced angina False, oldpeak value 3.0, slope value flat, ca value nan, thal value nan, and diagnosis outcome 2.",
+            "Patient ID P1739, Name Rohan Sharma, aged 60 years with sex value Male, chest pain type asymptomatic, resting blood pressure 152.0 mmHg, cholesterol level 0.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 118.0, exercise induced angina True, oldpeak value 0.0, slope value nan, ca value nan, thal value reversable defect, and diagnosis outcome 0.",
+            "Patient ID P1307, Name Rohan Desai, aged 31 years with sex value Female, chest pain type atypical angina, resting blood pressure 100.0 mmHg, cholesterol level 219.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 150.0, exercise induced angina False, oldpeak value 0.0, slope value nan, ca value nan, thal value nan, and diagnosis outcome 0.",
+            "Patient ID P1315, Name Krishna Sharma, aged 35 years with sex value Female, chest pain type typical angina, resting blood pressure 120.0 mmHg, cholesterol level 160.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 185.0, exercise induced angina False, oldpeak value 0.0, slope value nan, ca value nan, thal value nan, and diagnosis outcome 0."
+          ],
+          "reference_answer": "Patients with severe to critical CAD include: Patient P1006 (62-year-old female, diagnosis outcome 3, oldpeak 3.6 downsloping, cholesterol 268.0 mg/dL), Patient P1023 (58-year-old male, diagnosis outcome 3, oldpeak 3.2, cholesterol 224.0 mg/dL), and Patient P1024 (60-year-old male, diagnosis outcome 4 - very severe CAD, oldpeak 2.4 flat slope, exercise-induced angina True, and LV hypertrophy).",
+          "reference_contexts": [
+            "Patient ID P1006, Name Kavya Iyer, aged 62 years with sex value Female, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 268.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 160.0, exercise induced angina False, oldpeak value 3.6, slope value downsloping, ca value 2.0, thal value normal, and diagnosis outcome 3.",
+            "Patient ID P1023, Name Reyansh Reddy, aged 58 years with sex value Male, chest pain type non-anginal, resting blood pressure 132.0 mmHg, cholesterol level 224.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 173.0, exercise induced angina False, oldpeak value 3.2, slope value upsloping, ca value 2.0, thal value reversable defect, and diagnosis outcome 3.",
+            "Patient ID P1024, Name Krishna Iyer, aged 60 years with sex value Male, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 206.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 132.0, exercise induced angina True, oldpeak value 2.4, slope value flat, ca value 2.0, thal value reversable defect, and diagnosis outcome 4."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.6667,
+          "answer_relevancy": 0.8784,
+          "overall_score": 0.515,
+          "latency_sec": 12.248
         },
         {
           "id": "EVAL_003",
           "category": "Patient_Lookup",
           "question": "What is the diagnosis outcome, chest pain type, and ECG result for patient P1001?",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.005,
-          "retrieved_patient_ids": []
+          "generated_answer": "I could not find sufficient information in the available medical knowledge base to answer this question.",
+          "retrieved_contexts": [
+            "Patient ID P1050, Name Krishna Sharma, aged 41 years with sex value Female, chest pain type atypical angina, resting blood pressure 105.0 mmHg, cholesterol level 198.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 168.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 1.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1009, Name Rohan Mehta, aged 53 years with sex value Male, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 203.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 155.0, exercise induced angina True, oldpeak value 3.1, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1.",
+            "Patient ID P1090, Name Pooja Desai, aged 66 years with sex value Male, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 302.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 151.0, exercise induced angina False, oldpeak value 0.4, slope value flat, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1070, Name Krishna Iyer, aged 65 years with sex value Female, chest pain type non-anginal, resting blood pressure 155.0 mmHg, cholesterol level 269.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 148.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1200, Name Aditya Shah, aged 50 years with sex value Female, chest pain type asymptomatic, resting blood pressure 110.0 mmHg, cholesterol level 254.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 159.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0."
+          ],
+          "reference_answer": "Patient P1001 (Arjun Kulkarni, 67-year-old male) has asymptomatic chest pain, resting ECG showing left ventricular hypertrophy (LVH), resting blood pressure of 160.0 mmHg, serum cholesterol of 286.0 mg/dL, positive exercise-induced angina, maximum heart rate of 108.0 bpm, oldpeak of 1.5 with flat slope, and a diagnosis outcome of 2 (Moderate CAD).",
+          "reference_contexts": [
+            "Patient ID P1001, Name Arjun Kulkarni, aged 67 years with sex value Male, chest pain type asymptomatic, resting blood pressure 160.0 mmHg, cholesterol level 286.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 108.0, exercise induced angina True, oldpeak value 1.5, slope value flat, ca value 3.0, thal value normal, and diagnosis outcome 2."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.0,
+          "overall_score": 0.0,
+          "latency_sec": 13.752
         },
         {
           "id": "EVAL_004",
           "category": "Biomarker_Cohort",
           "question": "Identify patients with hypercholesterolemia with serum cholesterol level exceeding 280 mg/dL and exercise-induced angina.",
-          "context_precision": 0.6792,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.8823,
-          "latency_sec": 16.629,
-          "retrieved_patient_ids": [
-            "KB_002",
-            "P1372",
-            "P1366",
-            "P1269",
-            "P1395"
-          ]
+          "generated_answer": "Based on the verified patient records provided:\n\n| Patient ID | Cholesterol (mg/dL) | Exercise\u2011induced angina |\n|------------|---------------------|--------------------------|\n| P1372      | 215                 | No |\n| P1366      | 266                 | No |\n| P1269      | 180                 | No |\n| P1395      | 284 **(>\u202f280)**     | No |\n\nOnly patient **P1395** has a serum cholesterol level exceeding 280\u202fmg/dL, but this patient does **not** have exercise\u2011induced angina (the record states \u201cExercise Induced Angina: No\u201d).  \n\n**Conclusion:** None of the patients in the supplied data meet **both** criteria of hypercholesterolemia (>\u202f280\u202fmg/dL) **and** the presence of exercise\u2011induced angina.",
+          "retrieved_contexts": [
+            "Causes and Pathophysiology of High Cholesterol (Hypercholesterolemia): High serum cholesterol (hypercholesterolemia, typically defined as total cholesterol > 200 mg/dL or LDL > 130 mg/dL, with severe hypercholesterolemia exceeding 240-280 mg/dL) is caused by a combination of genetic factors (such as familial hypercholesterolemia and LDL receptor mutations) and lifestyle factors. Major lifestyle causes include diets rich in saturated and trans fats, physical inactivity, obesity, and smoking. Secondary medical causes include type 2 diabetes mellitus, hypothyroidism, chronic kidney disease, and cholestatic liver disease. Elevated low-density lipoprotein (LDL) particles infiltrate arterial endothelial walls, undergoing oxidative modification and promoting foam cell formation, atheromatous plaque development, and coronary artery narrowing.",
+            "Patient ID P1372, Name Vivaan Joshi, aged 44 years with sex value Male, chest pain type atypical angina, resting blood pressure 130.0 mmHg, cholesterol level 215.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 135.0, exercise induced angina False, oldpeak value 0.0, slope value nan, ca value nan, thal value nan, and diagnosis outcome 0.",
+            "Patient ID P1366, Name Rohan Sharma, aged 43 years with sex value Female, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 266.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 118.0, exercise induced angina False, oldpeak value 0.0, slope value nan, ca value nan, thal value nan, and diagnosis outcome 0.",
+            "Patient ID P1269, Name Sai Joshi, aged 42 years with sex value Male, chest pain type non-anginal, resting blood pressure 130.0 mmHg, cholesterol level 180.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 150.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1395, Name Aditya Joshi, aged 48 years with sex value Female, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 284.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 120.0, exercise induced angina False, oldpeak value 0.0, slope value nan, ca value nan, thal value nan, and diagnosis outcome 0."
+          ],
+          "reference_answer": "Patients meeting both criteria are Patient P1001 (cholesterol 286.0 mg/dL, exercise induced angina True, diagnosis outcome 2) and Patient P1007 (cholesterol 354.0 mg/dL, exercise induced angina True, diagnosis outcome 0).",
+          "reference_contexts": [
+            "Patient ID P1001, Name Arjun Kulkarni, aged 67 years with sex value Male, chest pain type asymptomatic, resting blood pressure 160.0 mmHg, cholesterol level 286.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 108.0, exercise induced angina True, oldpeak value 1.5, slope value flat, ca value 3.0, thal value normal, and diagnosis outcome 2.",
+            "Patient ID P1007, Name Priya Sharma, aged 57 years with sex value Female, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 354.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 163.0, exercise induced angina True, oldpeak value 0.6, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.6,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.8456,
+          "overall_score": 0.4819,
+          "latency_sec": 12.22
         },
         {
           "id": "EVAL_005",
           "category": "Patient_Lookup",
           "question": "What are the clinical indicators and fasting blood sugar status for patient P1000?",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.003,
-          "retrieved_patient_ids": []
+          "generated_answer": "**Patient\u202fP1000 \u2013 Clinical Summary**\n\n| Indicator | Value |\n|-----------|-------|\n| **Age / Sex** | 63\u202fyears\u202fMale |\n| **Chest\u2011pain type** | Typical angina (Type\u202f1) |\n| **Resting blood pressure** | 145\u202fmm\u202fHg |\n| **Serum cholesterol** | 233\u202fmg/dL |\n| **Fasting blood\u2011sugar status** | **Elevated** ( >\u202f120\u202fmg/dL ) |\n| **Resting ECG** | Left\u2011ventricular hypertrophy |\n| **Maximum heart rate (exercise)** | 150\u202fbpm |\n| **Exercise\u2011induced angina** | Absent |\n| **ST\u2011depression (oldpeak)** | 2.3\u202fmm |\n| **Slope of ST segment** | Down\u2011sloping |\n| **Diagnosis** | No coronary artery disease (CAD) \u2013 \u201cHealthy\u201d |\n\nAll of the above values are taken directly from the verified patient record for P1000.",
+          "retrieved_contexts": [
+            "Patient ID P1000, Name Aisha Joshi, aged 63 years with sex value Male, chest pain type typical angina, resting blood pressure 145.0 mmHg, cholesterol level 233.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 150.0, exercise induced angina False, oldpeak value 2.3, slope value downsloping, ca value 0.0, thal value fixed defect, and diagnosis outcome 0.",
+            "Patient ID P1050, Name Krishna Sharma, aged 41 years with sex value Female, chest pain type atypical angina, resting blood pressure 105.0 mmHg, cholesterol level 198.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 168.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 1.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1070, Name Krishna Iyer, aged 65 years with sex value Female, chest pain type non-anginal, resting blood pressure 155.0 mmHg, cholesterol level 269.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 148.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1030, Name Krishna Mehta, aged 69 years with sex value Female, chest pain type typical angina, resting blood pressure 140.0 mmHg, cholesterol level 239.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 151.0, exercise induced angina False, oldpeak value 1.8, slope value upsloping, ca value 2.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1032, Name Aditya Kapoor, aged 64 years with sex value Male, chest pain type non-anginal, resting blood pressure 140.0 mmHg, cholesterol level 335.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 158.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 1."
+          ],
+          "reference_answer": "Patient P1000 (Aisha Joshi, 63-year-old male) presents with typical angina chest pain, resting blood pressure of 145.0 mmHg, cholesterol of 233.0 mg/dL, elevated fasting blood sugar (True, >120 mg/dL), resting ECG showing left ventricular hypertrophy, maximum heart rate 150.0 bpm, ST depression oldpeak 2.3 downsloping, and diagnosis outcome 0.",
+          "reference_contexts": [
+            "Patient ID P1000, Name Aisha Joshi, aged 63 years with sex value Male, chest pain type typical angina, resting blood pressure 145.0 mmHg, cholesterol level 233.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 150.0, exercise induced angina False, oldpeak value 2.3, slope value downsloping, ca value 0.0, thal value fixed defect, and diagnosis outcome 0."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.6716,
+          "overall_score": 0.6716,
+          "latency_sec": 13.088
         },
         {
           "id": "EVAL_006",
           "category": "Symptom_Risk",
           "question": "Which patients present with atypical angina chest pain and normal resting ECG?",
-          "context_precision": 0.6792,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.8823,
-          "latency_sec": 16.989,
-          "retrieved_patient_ids": [
-            "KB_005",
-            "P1366",
-            "P1289",
-            "P1443",
-            "P1336"
-          ]
+          "generated_answer": "**Patients with atypical angina (Type\u202f2) and a normal resting ECG**\n\n| Patient ID | Age | Sex |\n|------------|-----|-----|\n| **P1366** | 43\u202fyears | Female |\n| **P1289** | 56\u202fyears | Male |\n| **P1443** | 54\u202fyears | Female |\n| **P1336** | 39\u202fyears | Male |\n\nAll four records explicitly state \u201cChest Pain: Atypical Angina (Type\u202f2)\u201d and \u201cResting ECG: normal.\u201d",
+          "retrieved_contexts": [
+            "Chest Pain Classifications: Typical, Atypical, Non-Anginal, and Asymptomatic: Chest pain is clinically categorized into four distinct types: (1) Typical Angina (Type 1): substernal chest discomfort with characteristic quality and duration, provoked by exertion or emotional stress, and relieved by rest or nitroglycerin. (2) Atypical Angina (Type 2): chest discomfort meeting two of the three typical angina criteria, often seen in women and younger cohorts. (3) Non-Anginal Pain (Type 3): chest discomfort meeting only one or none of the classic features, frequently musculoskeletal or gastrointestinal in origin. (4) Asymptomatic / Silent Ischemia (Type 4): absence of angina despite documented myocardial hypoperfusion or CAD on diagnostic testing.",
+            "Patient ID P1366, Name Rohan Sharma, aged 43 years with sex value Female, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 266.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 118.0, exercise induced angina False, oldpeak value 0.0, slope value nan, ca value nan, thal value nan, and diagnosis outcome 0.",
+            "Patient ID P1289, Name Krishna Reddy, aged 56 years with sex value Male, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 240.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 169.0, exercise induced angina False, oldpeak value 0.0, slope value downsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1443, Name Ananya Joshi, aged 54 years with sex value Female, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 221.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 138.0, exercise induced angina False, oldpeak value 1.0, slope value upsloping, ca value nan, thal value nan, and diagnosis outcome 0.",
+            "Patient ID P1336, Name Ananya Shah, aged 39 years with sex value Male, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 204.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 145.0, exercise induced angina False, oldpeak value 0.0, slope value nan, ca value nan, thal value nan, and diagnosis outcome 0."
+          ],
+          "reference_answer": "Patients presenting with atypical angina and normal resting ECG include Patient P1005 (56 male, BP 120, chol 236, oldpeak 0.8, outcome 0), Patient P1013 (44 male, BP 120, chol 263, oldpeak 0.0, outcome 0), and Patient P1016 (48 male, BP 110, chol 229, oldpeak 1.0, outcome 1).",
+          "reference_contexts": [
+            "Patient ID P1005, Name Arjun Kapoor, aged 56 years with sex value Male, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 236.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 178.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1013, Name Reyansh Kapoor, aged 44 years with sex value Male, chest pain type atypical angina, resting blood pressure 120.0 mmHg, cholesterol level 263.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 173.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 0.",
+            "Patient ID P1016, Name Ananya Kapoor, aged 48 years with sex value Male, chest pain type atypical angina, resting blood pressure 110.0 mmHg, cholesterol level 229.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 168.0, exercise induced angina False, oldpeak value 1.0, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.8227,
+          "overall_score": 0.4113,
+          "latency_sec": 13.928
         },
         {
           "id": "EVAL_007",
           "category": "Patient_Lookup",
           "question": "What is the cardiovascular profile, exercise angina status, and ST depression for patient P1009?",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.002,
-          "retrieved_patient_ids": []
+          "generated_answer": "**Patient\u202fP1009 (Rohan\u202fMehta)**  \n\n- **Cardiovascular profile**  \n  - **Age / Sex:** 53\u202fyears, Male  \n  - **Resting blood pressure:** 140\u202fmm\u202fHg  \n  - **Serum cholesterol:** 203\u202fmg/dL  \n  - **Fasting blood\u2011sugar:** Elevated (>120\u202fmg/dL)  \n  - **Resting ECG:** Left\u2011ventricular hypertrophy  \n  - **Maximum heart rate on exercise test:** 155\u202fbpm  \n  - **Diagnosis:** Mild coronary artery disease (CAD\u202fClass\u202f1)  \n\n- **Exercise\u2011induced angina status:** Present (exercise\u2011induced angina = **Yes**)  \n\n- **ST\u2011segment depression (oldpeak):** 3.1\u202fmm, with a down\u2011sloping slope.  \n\nThese values are taken directly from the verified record for patient\u202fP1009.",
+          "retrieved_contexts": [
+            "Patient ID P1009, Name Rohan Mehta, aged 53 years with sex value Male, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 203.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 155.0, exercise induced angina True, oldpeak value 3.1, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1.",
+            "Patient ID P1050, Name Krishna Sharma, aged 41 years with sex value Female, chest pain type atypical angina, resting blood pressure 105.0 mmHg, cholesterol level 198.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 168.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 1.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1090, Name Pooja Desai, aged 66 years with sex value Male, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 302.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 151.0, exercise induced angina False, oldpeak value 0.4, slope value flat, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1000, Name Aisha Joshi, aged 63 years with sex value Male, chest pain type typical angina, resting blood pressure 145.0 mmHg, cholesterol level 233.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 150.0, exercise induced angina False, oldpeak value 2.3, slope value downsloping, ca value 0.0, thal value fixed defect, and diagnosis outcome 0.",
+            "Patient ID P1160, Name Pooja Desai, aged 46 years with sex value Male, chest pain type atypical angina, resting blood pressure 101.0 mmHg, cholesterol level 197.0 mg/dL, fasting blood sugar True, rest ECG result normal, maximum heart rate 156.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 0."
+          ],
+          "reference_answer": "Patient P1009 (Rohan Mehta, 53-year-old male) has asymptomatic chest pain, resting blood pressure 140.0 mmHg, cholesterol 203.0 mg/dL, elevated fasting blood sugar (>120 mg/dL), resting ECG showing LV hypertrophy, maximum heart rate 155.0 bpm, positive exercise-induced angina (True), an oldpeak ST depression of 3.1 with downsloping slope, and diagnosis outcome 1 (Mild CAD).",
+          "reference_contexts": [
+            "Patient ID P1009, Name Rohan Mehta, aged 53 years with sex value Male, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 203.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 155.0, exercise induced angina True, oldpeak value 3.1, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 1.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.8707,
+          "overall_score": 0.9354,
+          "latency_sec": 13.238
         },
         {
           "id": "EVAL_008",
           "category": "Biomarker_Cohort",
           "question": "Which patients have resting systolic blood pressure exceeding 150 mmHg indicating stage 2 hypertension?",
-          "context_precision": 0.6792,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.8823,
-          "latency_sec": 16.344,
-          "retrieved_patient_ids": [
-            "KB_007",
-            "P1052",
-            "P1116",
-            "P1232",
-            "P1237"
-          ]
+          "generated_answer": "Based on the verified patient records provided:\n\n- **Patient P1052** \u2013 resting systolic BP\u202f=\u202f112\u202fmmHg  \n- **Patient P1116** \u2013 resting systolic BP\u202f=\u202f140\u202fmmHg  \n- **Patient P1232** \u2013 resting systolic BP\u202f=\u202f118\u202fmmHg  \n- **Patient P1237** \u2013 resting systolic BP\u202f=\u202f120\u202fmmHg  \n\nNone of these patients have a resting systolic blood pressure exceeding\u202f150\u202fmmHg, which would meet the criterion for stage\u202f2 hypertension.",
+          "retrieved_contexts": [
+            "Hypertension Guidelines and Hemodynamic Impact on Cardiac Function: Systemic arterial hypertension is categorized into Stage 1 (systolic BP 130-139 mmHg or diastolic 80-89 mmHg) and Stage 2 (systolic BP >= 140 mmHg or diastolic >= 90 mmHg). Chronic systolic blood pressure elevation exceeding 140-160 mmHg increases left ventricular afterload, promoting progressive concentric left ventricular hypertrophy (LVH), coronary microvascular remodeling, accelerated arterial stiffness, and significantly increased risk of congestive heart failure, ischemic stroke, and myocardial infarction.",
+            "Patient ID P1052, Name Ananya Kapoor, aged 44 years with sex value Male, chest pain type asymptomatic, resting blood pressure 112.0 mmHg, cholesterol level 290.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 153.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 1.0, thal value normal, and diagnosis outcome 2.",
+            "Patient ID P1116, Name Ananya Kapoor, aged 58 years with sex value Male, chest pain type non-anginal, resting blood pressure 140.0 mmHg, cholesterol level 211.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 165.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1232, Name Ananya Verma, aged 49 years with sex value Male, chest pain type non-anginal, resting blood pressure 118.0 mmHg, cholesterol level 149.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 126.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 3.0, thal value normal, and diagnosis outcome 1.",
+            "Patient ID P1237, Name Rohan Kapoor, aged 46 years with sex value Male, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 249.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 144.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1."
+          ],
+          "reference_answer": "Patients with resting blood pressure exceeding 150 mmHg include Patient P1001 (resting BP 160.0 mmHg, cholesterol 286.0 mg/dL, outcome 2) and Patient P1014 (resting BP 172.0 mmHg, non-anginal chest pain, cholesterol 199.0 mg/dL, outcome 0).",
+          "reference_contexts": [
+            "Patient ID P1001, Name Arjun Kulkarni, aged 67 years with sex value Male, chest pain type asymptomatic, resting blood pressure 160.0 mmHg, cholesterol level 286.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 108.0, exercise induced angina True, oldpeak value 1.5, slope value flat, ca value 3.0, thal value normal, and diagnosis outcome 2.",
+            "Patient ID P1014, Name Rahul Gupta, aged 52 years with sex value Male, chest pain type non-anginal, resting blood pressure 172.0 mmHg, cholesterol level 199.0 mg/dL, fasting blood sugar True, rest ECG result normal, maximum heart rate 162.0, exercise induced angina False, oldpeak value 0.5, slope value upsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 0."
+          ],
+          "context_precision": 1.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.8571,
+          "answer_relevancy": 0.8474,
+          "overall_score": 0.6761,
+          "latency_sec": 13.112
         },
         {
           "id": "EVAL_009",
           "category": "Patient_Lookup",
           "question": "What are the clinical findings, age, and maximum heart rate for patient P1003?",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.002,
-          "retrieved_patient_ids": []
+          "generated_answer": "I could not find sufficient information in the available medical knowledge base to answer this question.",
+          "retrieved_contexts": [
+            "Patient ID P1050, Name Krishna Sharma, aged 41 years with sex value Female, chest pain type atypical angina, resting blood pressure 105.0 mmHg, cholesterol level 198.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 168.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 1.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1009, Name Rohan Mehta, aged 53 years with sex value Male, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 203.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 155.0, exercise induced angina True, oldpeak value 3.1, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1.",
+            "Patient ID P1070, Name Krishna Iyer, aged 65 years with sex value Female, chest pain type non-anginal, resting blood pressure 155.0 mmHg, cholesterol level 269.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 148.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1000, Name Aisha Joshi, aged 63 years with sex value Male, chest pain type typical angina, resting blood pressure 145.0 mmHg, cholesterol level 233.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 150.0, exercise induced angina False, oldpeak value 2.3, slope value downsloping, ca value 0.0, thal value fixed defect, and diagnosis outcome 0.",
+            "Patient ID P1030, Name Krishna Mehta, aged 69 years with sex value Female, chest pain type typical angina, resting blood pressure 140.0 mmHg, cholesterol level 239.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 151.0, exercise induced angina False, oldpeak value 1.8, slope value upsloping, ca value 2.0, thal value normal, and diagnosis outcome 0."
+          ],
+          "reference_answer": "Patient P1003 (Kavya Iyer, 37-year-old male) presents with non-anginal chest pain, resting blood pressure of 130.0 mmHg, cholesterol of 250.0 mg/dL, normal resting ECG, a high maximum heart rate of 187.0 bpm, negative exercise-induced angina, oldpeak ST depression of 3.5 downsloping, and diagnosis outcome 0.",
+          "reference_contexts": [
+            "Patient ID P1003, Name Kavya Iyer, aged 37 years with sex value Male, chest pain type non-anginal, resting blood pressure 130.0 mmHg, cholesterol level 250.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 187.0, exercise induced angina False, oldpeak value 3.5, slope value downsloping, ca value 0.0, thal value normal, and diagnosis outcome 0."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.0,
+          "overall_score": 0.0,
+          "latency_sec": 10.77
         },
         {
           "id": "EVAL_010",
           "category": "Symptom_Risk",
           "question": "Identify patients with left ventricular hypertrophy on resting ECG and elevated fasting blood sugar.",
-          "context_precision": 1.0,
-          "context_recall": 0.95,
-          "faithfulness": 1.0,
-          "answer_relevancy": 0.9,
-          "overall_score": 0.9625,
-          "latency_sec": 0.021,
-          "retrieved_patient_ids": []
+          "generated_answer": "**Patient meeting both criteria (left\u2011ventricular hypertrophy on resting ECG\u202f+\u202felevated fasting blood sugar):**\n\n| Patient ID | Age | Sex | Resting ECG | Fasting Blood Sugar |\n|------------|-----|-----|-------------|----------------------|\n| **P1048**  | 65  | Female | **lv hypertrophy** | **Elevated (>120\u202fmg/dL)** |\n\n**Key clinical details for P1048**  \n- Resting blood pressure: 140\u202fmm\u202fHg  \n- Cholesterol: 417\u202fmg/dL (markedly high)  \n- Chest\u2011pain type: Non\u2011anginal (type\u202f3)  \n- Maximum heart rate: 157\u202fbpm  \n- Exercise\u2011induced angina: Absent  \n- ST depression (oldpeak): 0.8\u202fmm, slope upsloping  \n- Diagnosis: Healthy / No CAD (outcome\u202f0)  \n\nNo other patients in the provided records have both left\u2011ventricular hypertrophy on the resting ECG and an elevated fasting blood\u2011sugar measurement.",
+          "retrieved_contexts": [
+            "Patient ID P1258, Name Rohan Joshi, aged 70 years with sex value Male, chest pain type atypical angina, resting blood pressure 156.0 mmHg, cholesterol level 245.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 143.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1067, Name Rohan Kapoor, aged 54 years with sex value Male, chest pain type non-anginal, resting blood pressure 150.0 mmHg, cholesterol level 232.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 165.0, exercise induced angina False, oldpeak value 1.6, slope value upsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 0.",
+            "Patient ID P1048, Name Ananya Joshi, aged 65 years with sex value Female, chest pain type non-anginal, resting blood pressure 140.0 mmHg, cholesterol level 417.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 157.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 1.0, thal value normal, and diagnosis outcome 0.",
+            "Patient ID P1052, Name Ananya Kapoor, aged 44 years with sex value Male, chest pain type asymptomatic, resting blood pressure 112.0 mmHg, cholesterol level 290.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 153.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 1.0, thal value normal, and diagnosis outcome 2.",
+            "Patient ID P1093, Name Krishna Joshi, aged 44 years with sex value Female, chest pain type non-anginal, resting blood pressure 108.0 mmHg, cholesterol level 141.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 175.0, exercise induced angina False, oldpeak value 0.6, slope value flat, ca value 0.0, thal value normal, and diagnosis outcome 0."
+          ],
+          "reference_answer": "Patients presenting with both left ventricular hypertrophy on ECG and elevated fasting blood sugar (FBS > 120 mg/dL) include Patient P1000 (63 male, BP 145, typical angina), Patient P1009 (53 male, BP 140, exercise angina True, outcome 1), and Patient P1012 (56 male, BP 130, chol 256, exercise angina True, outcome 2).",
+          "reference_contexts": [
+            "Patient ID P1000, Name Aisha Joshi, aged 63 years with sex value Male, chest pain type typical angina, resting blood pressure 145.0 mmHg, cholesterol level 233.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 150.0, exercise induced angina False, oldpeak value 2.3, slope value downsloping, ca value 0.0, thal value fixed defect, and diagnosis outcome 0.",
+            "Patient ID P1009, Name Rohan Mehta, aged 53 years with sex value Male, chest pain type asymptomatic, resting blood pressure 140.0 mmHg, cholesterol level 203.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 155.0, exercise induced angina True, oldpeak value 3.1, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 1.",
+            "Patient ID P1012, Name Meera Gupta, aged 56 years with sex value Male, chest pain type non-anginal, resting blood pressure 130.0 mmHg, cholesterol level 256.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 142.0, exercise induced angina True, oldpeak value 0.6, slope value flat, ca value 1.0, thal value fixed defect, and diagnosis outcome 2."
+          ],
+          "context_precision": 0.0,
+          "context_recall": 0.0,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.9351,
+          "overall_score": 0.3117,
+          "latency_sec": 12.76
         }
       ]
     }
   },
   "metric_differences": {
-    "context_precision": -0.1284,
-    "context_recall": 0.0,
-    "faithfulness": 0.0,
-    "answer_relevancy": 0.0,
-    "overall_rag_score": -0.0321
+    "context_precision": 0.025,
+    "context_recall": 0.04,
+    "faithfulness": -0.0524,
+    "answer_relevancy": -0.2587,
+    "overall_rag_score": -0.104
   }
 }
