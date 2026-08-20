@@ -20,8 +20,8 @@ def load_knowledge():
     splitter = CharacterTextSplitter(chunk_size=200, chunk_overlap=20)
     docs = splitter.split_text(text)
 
-    # Create embeddings
-    embeddings = HuggingFaceEmbeddings()
+    # Create medical embeddings
+    embeddings = HuggingFaceEmbeddings(model_name="pritamdeka/S-PubMedBert-MS-MARCO")
 
     # Store in FAISS vector DB
     db = FAISS.from_texts(docs, embeddings)

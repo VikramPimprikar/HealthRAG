@@ -2,10 +2,11 @@
 Enhanced Medical RAG Pipeline
 =============================
 Provides semantic retrieval from FAISS vector database with:
-- Top-K evidence search with similarity scoring
+- Top-K evidence search over patient narratives and clinical medical knowledge
 - Structured metadata extraction (Patient ID, biomarkers, clinical indicators)
-- Evidence hashing (SHA-256) for blockchain verification
-- Anti-hallucination filtering & prompt grounding
+- Cryptographic evidence hashing (SHA-256) for blockchain verification
+- Grounded medical Q&A with anti-hallucination and fallback guardrails
+- Full query routing between Normal Medical RAG and Structured Data queries
 
 Author: RAGChainMed
 """
@@ -33,6 +34,76 @@ else:
     load_dotenv()
 
 
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings
+except ImportError:
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+
+from app.clinical.structured_query_engine import get_structured_engine
+
+
+MISMATCH_REFUSAL_MESSAGE = (
+    "I apologize for the mismatch in the query and the provided medical records. "
+    "As an AI assistant, my capabilities are limited to clinical decision support and answering cardiovascular medical inquiries. "
+    "If you have any clinical question or need assistance with cardiovascular information, "
+    "please feel free to ask, and I will be more than happy to help."
+)
+
+INSUFFICIENT_CONTEXT_MESSAGE = (
+    "I could not find sufficient information in the available medical knowledge base to answer this question. "
+    "Please refine your inquiry or consult the relevant clinical literature."
+)
+
+
+def is_clinical_query(query: str) -> bool:
+    """
+    Determine whether a query is related to clinical medicine, cardiology,
+    cardiovascular biomarkers, diagnoses, symptoms, or patient records.
+    Returns False for off-topic queries (e.g. quantum physics, recipes, movies, programming).
+    """
+    q = query.lower().strip()
+    if not q:
+        return False
+
+    # 1. Direct Patient ID or Record match (e.g. P1005, P1651, patient 12)
+    if re.search(r"\bp\d+\b", q) or re.search(r"\bpatient\b", q) or re.search(r"\brecord\b", q):
+        return True
+
+    # 2. Key clinical and cardiovascular terminology
+    clinical_terms = [
+        "heart", "cardiac", "cardio", "coronary", "angina", "chest pain", "cp",
+        "blood pressure", "bp", "trestbps", "hypertension", "hypotension", "normotensive",
+        "cholesterol", "chol", "hypercholesterolemia", "lipid", "serum", "ldl", "hdl", "triglycerides",
+        "ecg", "ekg", "electrocardiogram", "electrocardiographic",
+        "blood sugar", "glucose", "fbs", "diabetic", "diabetes",
+        "heart rate", "bpm", "thalach", "thalch", "tachycardia", "bradycardia", "pulse",
+        "st depression", "oldpeak", "slope", "upsloping", "downsloping", "flat",
+        "vessel", "vessels", "fluoroscopy", "thallium", "thal",
+        "cad", "disease", "severity", "ischemia", "ischemic", "infarction", "myocardial",
+        "atherosclerosis", "hypertrophy", "lvh", "defect", "reversable",
+        "symptom", "symptoms", "cause", "causes", "diagnosis", "prognosis", "clinical",
+        "biomarker", "vital", "mechanism", "pathophysiology", "risk", "risk factor", "factors",
+        "hospital", "medical", "treatment", "doctor", "nurse", "physician", "medication",
+        "health", "asymptomatic", "typical", "atypical", "non-anginal", "cohort",
+        "age", "sex", "male", "female", "exercise induced", "exang", "cardiologist", "cardiology"
+    ]
+    for term in clinical_terms:
+        if term in q:
+            return True
+
+    # 3. Off-topic indicators without clinical terms
+    off_topic_indicators = [
+        "quantum", "astrophysics", "rocket", "teleportation", "recipe", "cooking",
+        "pasta", "movie", "cinema", "football", "cricket", "nba", "programming",
+        "javascript", "python code", "minecraft", "weather forecast", "lyrics",
+        "capital of", "president", "who won", "joke"
+    ]
+    if any(ind in q for ind in off_topic_indicators):
+        return False
+
+    return False
+
+
 def sha256_hash(text: str) -> str:
     """Compute SHA-256 hash of a string"""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -43,22 +114,27 @@ class MedicalRAGService:
     Production-grade Medical RAG Service for clinical Q&A and evidence retrieval.
     """
 
-    def __init__(self, vectordb_path: Optional[str] = None):
-        # Resolve vectordb path
+    def __init__(
+        self,
+        vectordb_path: Optional[str] = None,
+        embedding_model_name: Optional[str] = None
+    ):
         base_dir = Path(__file__).resolve().parent.parent.parent.parent
         if vectordb_path:
             self.vectordb_path = Path(vectordb_path)
         else:
             self.vectordb_path = base_dir / "vectordb"
 
+        self.embedding_model_name = embedding_model_name or "pritamdeka/S-PubMedBert-MS-MARCO"
+
         # Initialize Groq client
         groq_key = os.getenv("GROQ_API_KEY")
         self.groq_client = Groq(api_key=groq_key) if groq_key else None
 
         # Initialize embedding model
-        print("Loading HuggingFace Embedding model (all-MiniLM-L6-v2)...")
+        print(f"Loading HuggingFace Embedding model ({self.embedding_model_name})...")
         self.embedding_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+            model_name=self.embedding_model_name
         )
 
         # Load FAISS index
@@ -85,12 +161,19 @@ class MedicalRAGService:
 
     def _extract_patient_metadata(self, text: str, initial_meta: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Extract and translate structured attributes from clinical narrative text.
+        Extract structured attributes from clinical text.
         """
         meta = dict(initial_meta)
 
+        # Check if medical knowledge document
+        if meta.get("doc_type") == "medical_knowledge" or text.startswith("KB") or "Symptoms of Heart Disease" in text or "Causes and Pathophysiology" in text or "Mechanisms and Clinical Significance" in text:
+            meta["doc_type"] = "medical_knowledge"
+            return meta
+
+        meta["doc_type"] = "patient_record"
+
         # Extract Patient ID
-        if "id" not in meta:
+        if "id" not in meta or meta["id"] == "KB":
             p_match = re.search(r"Patient\s*ID\s*([A-Za-z0-9]+)", text, re.IGNORECASE)
             if p_match:
                 meta["id"] = p_match.group(1)
@@ -202,15 +285,15 @@ class MedicalRAGService:
 
     def retrieve_evidence(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
-        Retrieve relevant evidence items from FAISS index with Hybrid Clinical
-        Semantic Re-ranking, similarity scores, and SHA-256 hashes.
+        Retrieve relevant evidence items from FAISS index.
+        Note: Internal distance metric is preserved for ranking, but user-facing
+        similarity scores are not attached to avoid misleading metrics.
         """
         if not self.vectorstore:
             return []
 
         try:
-            # Broad candidate pool retrieval for clinical re-ranking
-            pool_k = min(max(top_k * 15, 60), getattr(self.vectorstore.index, "ntotal", 920))
+            pool_k = min(max(top_k * 15, 60), getattr(self.vectorstore.index, "ntotal", 930))
             raw_results = self.vectorstore.similarity_search_with_score(query, k=pool_k)
         except Exception as e:
             print(f"Error during vector similarity search: {e}")
@@ -218,86 +301,40 @@ class MedicalRAGService:
 
         q_lower = query.lower()
 
-        # Detect clinical query intent features
+        # Check if query targets medical concepts vs specific patient
+        is_concept_query = any(w in q_lower for w in ["what are the symptoms", "what causes", "explain st depression", "risk factors", "pathophysiology", "what does", "how does", "what role", "what is the clinical significance"])
+        
         target_pid = re.findall(r"\b(p\d{4})\b", q_lower)
         target_pid = [p.upper() for p in target_pid]
-
-        q_wants_exang = any(w in q_lower for w in ["exercise induced angina", "exercise angina", "exang", "induced angina"])
-        q_wants_typical_cp = any(w in q_lower for w in ["typical angina", "typical chest pain", "cp 1", "type 1"])
-        q_wants_atypical_cp = any(w in q_lower for w in ["atypical angina", "atypical chest pain", "cp 2", "type 2"])
-        q_wants_nonanginal_cp = any(w in q_lower for w in ["non-anginal", "non anginal", "cp 3", "type 3"])
-        q_wants_asymptomatic_cp = any(w in q_lower for w in ["asymptomatic", "silent", "cp 4", "type 4"])
-        q_wants_high_chol = any(w in q_lower for w in ["high cholesterol", "cholesterol above", "cholesterol level", "hypercholesterol", "chol >", "chol >="])
-        q_wants_high_bp = any(w in q_lower for w in ["high blood pressure", "hypertension", "blood pressure over", "bp over", "bp above", "trestbps"])
-        q_wants_severe_cad = any(w in q_lower for w in ["severe", "critical", "cad class 3", "cad class 4", "high risk"])
-        q_wants_st_dep = any(w in q_lower for w in ["st depression", "oldpeak", "downsloping"])
-        q_wants_fbs = any(w in q_lower for w in ["fasting blood sugar", "fbs", "diabetic", "glucose"])
 
         candidates = []
         for doc, distance in raw_results:
             content = doc.page_content.strip()
             meta = self._extract_patient_metadata(content, doc.metadata)
             doc_pid = meta.get("id", "").upper()
+            doc_type = meta.get("doc_type", "patient_record")
 
-            # Base dense similarity score (0.0 to 1.0)
+            # Base score
             base_sim = 1.0 / (1.0 + float(distance))
             hybrid_score = base_sim
 
-            # 1. Exact Patient ID Match boost
+            # Medical knowledge documents boost for general medical questions
+            if is_concept_query and doc_type == "medical_knowledge":
+                hybrid_score += 1.5
+
+            # Exact Patient ID Match boost
             if target_pid and doc_pid in target_pid:
                 hybrid_score += 2.0
-
-            # 2. Exercise Induced Angina Match
-            doc_has_exang = meta.get("exercise_angina") == "Yes (Present)" or "exercise induced angina true" in content.lower() or "exercise induced angina 1" in content.lower()
-            if q_wants_exang and doc_has_exang:
-                hybrid_score += 0.40
-
-            # 3. Chest Pain Types Match (exact type matching without substring false positives)
-            doc_cp = meta.get("chest_pain", "").lower()
-            if q_wants_typical_cp and "typical angina (type 1)" in doc_cp:
-                hybrid_score += 0.50
-            if q_wants_atypical_cp and "atypical angina (type 2)" in doc_cp:
-                hybrid_score += 0.50
-            if q_wants_nonanginal_cp and "non-anginal pain (type 3)" in doc_cp:
-                hybrid_score += 0.50
-            if q_wants_asymptomatic_cp and "asymptomatic (type 4)" in doc_cp:
-                hybrid_score += 0.50
-
-            # 4. Cholesterol Match
-            doc_chol = meta.get("cholesterol", 0.0)
-            if q_wants_high_chol and doc_chol >= 240:
-                hybrid_score += 0.30
-
-            # 5. Blood Pressure Match
-            doc_bp = meta.get("resting_bp", 0.0)
-            if q_wants_high_bp and doc_bp >= 140:
-                hybrid_score += 0.30
-
-            # 6. Severe CAD Match
-            doc_outcome = meta.get("diagnosis_outcome", 0)
-            if q_wants_severe_cad and doc_outcome >= 3:
-                hybrid_score += 0.35
-
-            # 7. Fasting Blood Sugar Match
-            doc_fbs = meta.get("fasting_blood_sugar", "")
-            if q_wants_fbs and "elevated" in doc_fbs.lower():
-                hybrid_score += 0.25
-
-            # 8. ST Depression Match
-            doc_oldpeak = meta.get("oldpeak", 0.0)
-            if q_wants_st_dep and doc_oldpeak >= 1.5:
-                hybrid_score += 0.25
 
             candidates.append({
                 "doc": doc,
                 "content": content,
                 "metadata": meta,
                 "distance": float(distance),
-                "base_sim": base_sim,
                 "hybrid_score": hybrid_score
             })
 
-        # Sort by hybrid clinical relevance score descending
+        # Sort by relevance score descending
         candidates.sort(key=lambda x: x["hybrid_score"], reverse=True)
         top_candidates = candidates[:top_k]
 
@@ -306,16 +343,11 @@ class MedicalRAGService:
             content = item["content"]
             meta = item["metadata"]
             meta["rank"] = rank
-            meta["distance"] = round(item["distance"], 4)
-            # Normalized display similarity percentage
-            display_sim = min(round(item["base_sim"] * 1.15, 4), 0.98)
-            meta["similarity_score"] = display_sim
 
             evidence_list.append({
                 "rank": rank,
                 "text": content,
                 "metadata": meta,
-                "similarity_score": display_sim,
                 "distance": item["distance"],
                 "sha256_hash": sha256_hash(content),
                 "patient_id": meta.get("id", f"Record-{rank}")
@@ -326,10 +358,11 @@ class MedicalRAGService:
     def answer_query(self, query: str, user_id: str = "guest", top_k: int = 5) -> Dict[str, Any]:
         """
         Execute full grounded RAG pipeline:
-        1. Retrieve top-K evidence chunks with similarity scoring.
-        2. Compute cryptographic evidence bundle hash.
-        3. Check relevance threshold to prevent hallucinations.
-        4. Generate grounded LLM answer citing retrieved evidence.
+        1. Check for Structured Patient Analytics & Exact Patient Lookups (100% Deterministic).
+        2. Pre-filter query for clinical domain validity.
+        3. Retrieve top-K evidence chunks from FAISS.
+        4. Check relevance threshold and anti-hallucination guardrails.
+        5. Generate grounded LLM answer citing retrieved evidence without displaying similarity scores.
         """
         query_cleaned = query.strip()
         if not query_cleaned:
@@ -339,88 +372,147 @@ class MedicalRAGService:
                 "answer": "Please provide a valid medical question or search query.",
                 "retrieved_evidence": [],
                 "evidence_hash": "",
-                "has_relevant_evidence": False
+                "has_relevant_evidence": False,
+                "retrieved_count": 0,
+                "is_mismatch": False,
+                "query_type": "empty"
             }
 
-        # 1. Retrieve evidence
+        # -------------------------------------------------------------
+        # STEP 1: Structured Patient Data Queries & Exact Patient Lookups
+        # -------------------------------------------------------------
+        try:
+            structured_engine = get_structured_engine()
+            structured_intent = structured_engine.detect_structured_query_intent(query_cleaned)
+            if structured_intent:
+                struct_res = structured_engine.execute_structured_query(query_cleaned)
+                if (
+                    struct_res.get("success", False)
+                    or struct_res.get("query_type", "").startswith("specific_patient")
+                    or struct_res.get("query_type", "").startswith("structured")
+                ):
+                    ans_text = struct_res["answer"]
+                    evidence_payload = struct_res.get("retrieved_evidence", [])
+                    return {
+                        "query": query_cleaned,
+                        "user_id": user_id,
+                        "answer": ans_text,
+                        "retrieved_evidence": evidence_payload,
+                        "evidence_hash": sha256_hash(ans_text),
+                        "has_relevant_evidence": struct_res.get("has_relevant_evidence", True),
+                        "retrieved_count": len(evidence_payload),
+                        "is_mismatch": False,
+                        "query_type": struct_res.get("query_type", "structured_data")
+                    }
+        except Exception as e:
+            print(f"Structured engine query routing error: {e}")
+
+        # -------------------------------------------------------------
+        # STEP 2: Clinical Domain Validity Check
+        # -------------------------------------------------------------
+        if not is_clinical_query(query_cleaned):
+            return {
+                "query": query_cleaned,
+                "user_id": user_id,
+                "answer": MISMATCH_REFUSAL_MESSAGE,
+                "retrieved_evidence": [],
+                "evidence_hash": "",
+                "has_relevant_evidence": False,
+                "retrieved_count": 0,
+                "is_mismatch": True,
+                "query_type": "off_topic_mismatch"
+            }
+
+        # -------------------------------------------------------------
+        # STEP 3: Retrieve Evidence from FAISS
+        # -------------------------------------------------------------
         evidence = self.retrieve_evidence(query_cleaned, top_k=top_k)
 
-        # 2. Compute combined evidence hash
-        combined_evidence_text = "\n---\n".join([item["text"] for item in evidence])
-        evidence_bundle_hash = sha256_hash(combined_evidence_text) if evidence else ""
-
-        # 3. Relevance & Hallucination Guardrail Check
+        # -------------------------------------------------------------
+        # STEP 4: Relevance & Empty Context Guardrail Check
+        # -------------------------------------------------------------
         if not evidence:
             return {
                 "query": query_cleaned,
                 "user_id": user_id,
-                "answer": "No relevant patient records or medical evidence were found matching your query in the clinical knowledge base.",
+                "answer": INSUFFICIENT_CONTEXT_MESSAGE,
                 "retrieved_evidence": [],
                 "evidence_hash": "",
-                "has_relevant_evidence": False
+                "has_relevant_evidence": False,
+                "retrieved_count": 0,
+                "is_mismatch": False,
+                "query_type": "insufficient_context"
             }
 
-        # Format clean, structured context for LLM
+        # Compute combined evidence hash for audit trail
+        combined_evidence_text = "\n---\n".join([item["text"] for item in evidence])
+        evidence_bundle_hash = sha256_hash(combined_evidence_text)
+
+        # -------------------------------------------------------------
+        # STEP 5: Format Verified Medical Context for LLM
+        # -------------------------------------------------------------
         context_blocks = []
+        has_kb_doc = False
         for item in evidence:
             meta = item["metadata"]
-            p_id = meta.get("id", "Unknown")
-            age = meta.get("age", "N/A")
-            sex = meta.get("sex", "N/A")
-            cp = meta.get("chest_pain", "N/A")
-            bp = meta.get("resting_bp", "N/A")
-            chol = meta.get("cholesterol", "N/A")
-            fbs = meta.get("fasting_blood_sugar", "N/A")
-            ecg = meta.get("rest_ecg", "N/A")
-            hr = meta.get("max_heart_rate", "N/A")
-            exang = meta.get("exercise_angina", "N/A")
-            oldpeak = meta.get("oldpeak", "N/A")
-            slope = meta.get("slope", "N/A")
-            diag = meta.get("diagnosis_label", "N/A")
-            score = item["similarity_score"]
+            doc_type = meta.get("doc_type", "patient_record")
 
-            block = (
-                f"### Patient Record: {p_id} (Relevance: {score:.1%})\n"
-                f"- Age: {age} | Sex: {sex}\n"
-                f"- Chest Pain: {cp}\n"
-                f"- Resting BP: {bp} mmHg | Cholesterol: {chol} mg/dL\n"
-                f"- Fasting Blood Sugar: {fbs}\n"
-                f"- Resting ECG: {ecg} | Max Heart Rate: {hr} bpm\n"
-                f"- Exercise Induced Angina: {exang}\n"
-                f"- ST Depression (oldpeak): {oldpeak} mm | Slope: {slope}\n"
-                f"- Diagnosis: {diag}\n"
-                f"- Full Clinical Text: {item['text']}"
-            )
-            context_blocks.append(block)
+            if doc_type == "medical_knowledge" or "KB" in meta.get("id", ""):
+                has_kb_doc = True
+                context_blocks.append(f"### Verified Medical Knowledge Reference [{meta.get('title', 'Clinical Reference')}]:\n{item['text']}")
+            else:
+                p_id = meta.get("id", "Unknown")
+                age = meta.get("age", "N/A")
+                sex = meta.get("sex", "N/A")
+                cp = meta.get("chest_pain", "N/A")
+                bp = meta.get("resting_bp", "N/A")
+                chol = meta.get("cholesterol", "N/A")
+                fbs = meta.get("fasting_blood_sugar", "N/A")
+                ecg = meta.get("rest_ecg", "N/A")
+                hr = meta.get("max_heart_rate", "N/A")
+                exang = meta.get("exercise_angina", "N/A")
+                oldpeak = meta.get("oldpeak", "N/A")
+                slope = meta.get("slope", "N/A")
+                diag = meta.get("diagnosis_label", "N/A")
+
+                block = (
+                    f"### Patient Record: {p_id}\n"
+                    f"- Age: {age} | Sex: {sex}\n"
+                    f"- Chest Pain: {cp}\n"
+                    f"- Resting BP: {bp} mmHg | Cholesterol: {chol} mg/dL\n"
+                    f"- Fasting Blood Sugar: {fbs}\n"
+                    f"- Resting ECG: {ecg} | Max Heart Rate: {hr} bpm\n"
+                    f"- Exercise Induced Angina: {exang}\n"
+                    f"- ST Depression (oldpeak): {oldpeak} mm | Slope: {slope}\n"
+                    f"- Diagnosis: {diag}\n"
+                    f"- Full Clinical Text: {item['text']}"
+                )
+                context_blocks.append(block)
 
         context_text = "\n\n".join(context_blocks)
 
-        # Grounded Medical System Prompt
+        # -------------------------------------------------------------
+        # STEP 6: System Prompt and Grounded Generation
+        # -------------------------------------------------------------
         system_prompt = (
-            "You are RAGChainMed, an intelligent clinical AI decision support assistant. "
-            "Your role is to answer clinical queries by analyzing and summarizing the retrieved patient medical records provided in the context.\n\n"
-            "Guidelines:\n"
-            "1. Directly answer the clinical question by synthesizing information from the retrieved patient records.\n"
-            "2. Always cite specific matching Patient IDs (e.g., P1005, P1786, P1796, P1315) and mention their key clinical indicators (e.g., age, sex, chest pain type, BP, cholesterol, ECG, exercise angina, ST depression, diagnosis).\n"
-            "3. If multiple conditions or cohorts are queried, present the matching patients found for each condition clearly.\n"
-            "4. NEVER start with a blanket dismissal like 'there are no patients'. Focus on presenting and evaluating the actual patients retrieved in the evidence.\n"
-            "5. Organize your response into:\n"
-            "   - **Clinical Summary**: Direct, informative overview summarizing the matching patient cohort and clinical findings.\n"
-            "   - **Matching Patient Findings**: Bullet points listing each matching patient with their key biomarkers and measurements.\n"
-            "   - **Clinical Insights & Risk Evaluation**: Brief cardiovascular clinical interpretation and risk factors.\n"
-            "6. If a query is completely unrelated to medicine/healthcare (e.g., recipes, programming, movies), state that the system is specialized for clinical cardiovascular decision support."
+            "You are RAGChainMed, an expert clinical AI decision support assistant specializing in cardiovascular medicine. "
+            "Your role is to provide grounded, accurate, and concise answers based STRICTLY on the retrieved medical knowledge and patient records provided in the context.\n\n"
+            "CRITICAL CLINICAL & ANTI-HALLUCINATION GUIDELINES:\n"
+            "1. Grounded Medical Answers: For general medical inquiries (such as symptoms of heart disease, causes of high cholesterol, ST depression mechanisms, or risk factors), clearly explain the pathophysiological and clinical concepts using the retrieved medical knowledge.\n"
+            "2. Patient Evidence: When answering questions regarding patient cases or cohorts, cite specific matching Patient IDs and key clinical indicators (Age, Sex, Chest Pain, BP, Cholesterol, ECG, ST depression, Diagnosis).\n"
+            "3. Zero Fabrication: Do not invent unsupported medical claims or patient records not present in the context.\n"
+            "4. If the retrieved context is genuinely insufficient to address the query, state: 'I could not find sufficient information in the available medical knowledge base to answer this question.'\n"
+            "5. NEVER mention similarity scores, vector distances, or retrieval confidence metrics in your generated response."
         )
 
-        user_prompt = f"""Verified Medical Records:
+        user_prompt = f"""Verified Medical Knowledge & Clinical Records:
 {context_text}
 
 Clinical Query:
 {query_cleaned}
 
-Please provide a structured, grounded clinical response analyzing the verified records above."""
+Please provide a clear, grounded clinical response directly addressing the query using the verified information above."""
 
-        # 4. Generate Answer via Groq
-        # Dynamically ensure Groq client is initialized
         if not self.groq_client:
             groq_key = os.getenv("GROQ_API_KEY")
             if groq_key:
@@ -431,56 +523,83 @@ Please provide a structured, grounded clinical response analyzing the verified r
 
         answer = ""
         if self.groq_client:
-            try:
-                response = self.groq_client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    temperature=0.2,
-                    max_tokens=650
-                )
-                answer = response.choices[0].message.content
-            except Exception as e:
-                print(f"Groq API Error: {e}")
-                # Fallback structured summary
-                summary_lines = []
-                for e in evidence[:3]:
-                    meta = e["metadata"]
+            candidate_models = [
+                "allam-2-7b",
+                "qwen/qwen3.6-27b",
+                "openai/gpt-oss-120b",
+                "llama-3.3-70b-versatile",
+                "llama-3.1-8b-instant"
+            ]
+            for m in candidate_models:
+                try:
+                    response = self.groq_client.chat.completions.create(
+                        model=m,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        temperature=0.2,
+                        max_tokens=650,
+                        timeout=15
+                    )
+                    content = response.choices[0].message.content
+                    if content and content.strip():
+                        if "</think>" in content:
+                            content = content.split("</think>")[-1].strip()
+                        if content:
+                            answer = content
+                            break
+                except Exception as e:
+                    continue
+
+        if not answer:
+            # Fallback structured summary
+            summary_lines = []
+            for e in evidence[:3]:
+                meta = e["metadata"]
+                if meta.get("doc_type") == "medical_knowledge":
+                    summary_lines.append(f"• {meta.get('title', 'Medical Guide')}: {e['text'][:180]}...")
+                else:
                     summary_lines.append(
                         f"• Patient {meta.get('id', 'N/A')}: Age {meta.get('age', 'N/A')}, "
                         f"Cholesterol {meta.get('cholesterol', 'N/A')} mg/dL, "
                         f"BP {meta.get('resting_bp', 'N/A')} mmHg, "
                         f"Chest Pain: {meta.get('chest_pain', 'N/A')}, "
-                        f"Exercise Angina: {meta.get('exercise_angina', 'N/A')}, "
                         f"Diagnosis: {meta.get('diagnosis_label', 'N/A')}."
                     )
-                answer = (
-                    f"**Clinical Summary:**\n"
-                    f"Retrieved {len(evidence)} verified patient record(s) matching your query from the clinical vector database.\n\n"
-                    f"**Key Matching Records:**\n" + "\n".join(summary_lines) + "\n\n"
-                    f"Please review the verified evidence cards below for complete clinical indicators and cryptographic hashes."
-                )
-        else:
-            # Fallback structured summary
-            summary_lines = []
-            for e in evidence[:3]:
-                meta = e["metadata"]
-                summary_lines.append(
-                    f"• Patient {meta.get('id', 'N/A')}: Age {meta.get('age', 'N/A')}, "
-                    f"Cholesterol {meta.get('cholesterol', 'N/A')} mg/dL, "
-                    f"BP {meta.get('resting_bp', 'N/A')} mmHg, "
-                    f"Chest Pain: {meta.get('chest_pain', 'N/A')}, "
-                    f"Exercise Angina: {meta.get('exercise_angina', 'N/A')}, "
-                    f"Diagnosis: {meta.get('diagnosis_label', 'N/A')}."
-                )
             answer = (
                 f"**Clinical Summary:**\n"
-                f"Retrieved {len(evidence)} verified patient record(s) matching your query from the clinical vector database.\n\n"
-                f"**Key Matching Records:**\n" + "\n".join(summary_lines) + "\n\n"
-                f"Please review the verified evidence cards below for complete clinical indicators and cryptographic hashes."
+                f"Retrieved {len(evidence)} verified medical evidence item(s) from the clinical knowledge base.\n\n"
+                f"**Key Retrieved Evidence:**\n" + "\n".join(summary_lines)
             )
+
+        # Hallucination / Refusal Check
+        mismatch_phrases = [
+            "i apologize for the mismatch",
+            "mismatch in the query",
+            "capabilities are limited to clinical decision support",
+            "limited to clinical decision support",
+            "specialized for clinical cardiovascular",
+            "cannot answer questions unrelated to",
+            "unrelated to medicine",
+            "unrelated to healthcare",
+            "not related to medicine",
+            "not related to healthcare"
+        ]
+
+        answer_lower = answer.lower()
+        if any(phrase in answer_lower for phrase in mismatch_phrases):
+            return {
+                "query": query_cleaned,
+                "user_id": user_id,
+                "answer": MISMATCH_REFUSAL_MESSAGE,
+                "retrieved_evidence": [],
+                "evidence_hash": "",
+                "has_relevant_evidence": False,
+                "retrieved_count": 0,
+                "is_mismatch": True,
+                "query_type": "off_topic_mismatch"
+            }
 
         return {
             "query": query_cleaned,
@@ -489,7 +608,9 @@ Please provide a structured, grounded clinical response analyzing the verified r
             "retrieved_evidence": evidence,
             "evidence_hash": evidence_bundle_hash,
             "has_relevant_evidence": True,
-            "retrieved_count": len(evidence)
+            "retrieved_count": len(evidence),
+            "is_mismatch": False,
+            "query_type": "rag_medical"
         }
 
 

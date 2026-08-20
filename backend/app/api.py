@@ -12,6 +12,7 @@ Author: RAGChainMed
 """
 
 import os
+import json
 import datetime
 from typing import Optional, List, Dict, Any
 from pathlib import Path
@@ -237,9 +238,11 @@ def perform_rag_query(query: str, user_id: str, top_k: int = 5):
     rag_service = get_rag_service()
     rag_result = rag_service.answer_query(query=query, user_id=user_id, top_k=top_k)
 
-    retrieved_records = rag_result["retrieved_evidence"]
+    retrieved_records = rag_result.get("retrieved_evidence", [])
     retrieved_texts = [r["text"] for r in retrieved_records]
-    patient_ids = [r["patient_id"] for r in retrieved_records]
+    patient_ids = [r.get("patient_id", "") for r in retrieved_records]
+    has_relevant = rag_result.get("has_relevant_evidence", False)
+    is_mismatch = rag_result.get("is_mismatch", False)
 
     # 3. Log to Blockchain with SHA-256 evidence and query hashes
     record = audit_logger.add_record(
@@ -250,7 +253,8 @@ def perform_rag_query(query: str, user_id: str, top_k: int = 5):
             "query": query,
             "records_retrieved": len(retrieved_records),
             "patient_ids": patient_ids,
-            "has_relevant_evidence": rag_result.get("has_relevant_evidence", False)
+            "has_relevant_evidence": has_relevant,
+            "is_mismatch": is_mismatch
         },
         status="success",
         query_text=query,
@@ -263,7 +267,9 @@ def perform_rag_query(query: str, user_id: str, top_k: int = 5):
         "answer": rag_result["answer"],
         "retrieved_records": retrieved_texts,
         "retrieved_evidence": retrieved_records,
-        "has_relevant_evidence": rag_result.get("has_relevant_evidence", False),
+        "has_relevant_evidence": has_relevant,
+        "is_mismatch": is_mismatch,
+        "query_type": rag_result.get("query_type", "rag_general"),
         "evidence_hash": record.evidence_hash,
         "query_hash": record.query_hash,
         "block_index": record.block_index,
@@ -422,3 +428,33 @@ def verify_evidence(
     )
 
     return verification_result
+
+
+# ============================================================
+# RAG EVALUATION & BENCHMARK METRICS ENDPOINTS
+# ============================================================
+
+@app.get("/api/v1/rag/evaluation-summary")
+def get_evaluation_summary():
+    """Retrieve saved RAG evaluation metrics and results"""
+    results_path = BASE_DIR / "data" / "evaluation_results.json"
+    comparison_path = BASE_DIR / "data" / "model_comparison.json"
+
+    data = {}
+    if results_path.exists():
+        with open(results_path, "r", encoding="utf-8") as f:
+            data["evaluation_results"] = json.load(f)
+    if comparison_path.exists():
+        with open(comparison_path, "r", encoding="utf-8") as f:
+            data["model_comparison"] = json.load(f)
+
+    if not data:
+        return {
+            "status": "pending",
+            "message": "Evaluation has not yet been executed. Run 'python scripts/evaluate_rag.py' to generate metrics."
+        }
+
+    return {
+        "status": "available",
+        "data": data
+    }

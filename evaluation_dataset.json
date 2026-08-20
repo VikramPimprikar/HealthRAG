@@ -1,0 +1,227 @@
+[
+  {
+    "id": "EVAL_001",
+    "category": "Angina & Symptoms",
+    "question": "What pathophysiological mechanisms cause exercise-induced angina in patients with coronary artery disease?",
+    "ground_truth_answer": "Exercise-induced angina occurs when physical exertion increases myocardial oxygen demand (via elevated heart rate and contractility) beyond the capacity of stenosed coronary arteries to deliver oxygenated blood, resulting in transient subendocardial myocardial ischemia and chest pain.",
+    "ground_truth_contexts": [
+      "Physical exertion and exercise induce tachycardia and increase cardiac workload, which sharply raises myocardial oxygen consumption. In the presence of coronary atherosclerosis and arterial stenosis, fixed coronary blood flow cannot meet this metabolic demand, precipitating acute myocardial ischemia and angina pectoris."
+    ]
+  },
+  {
+    "id": "EVAL_002",
+    "category": "ECG & ST-Segment Dynamics",
+    "question": "How is ST-segment depression during treadmill exercise testing interpreted in suspected ischemic heart disease?",
+    "ground_truth_answer": "Horizontal or downsloping ST-segment depression greater than or equal to 1.0 mm (0.1 mV) measured 60 to 80 ms after the J-point is a hallmark electrocardiographic marker of myocardial ischemia, reflecting subendocardial hypoperfusion under stress.",
+    "ground_truth_contexts": [
+      "Electrocardiographic ST-segment depression during exercise stress testing, particularly flat or downsloping morphologies exceeding 1.0 mm, indicates significant subendocardial ischemia secondary to restricted coronary arterial perfusion."
+    ]
+  },
+  {
+    "id": "EVAL_003",
+    "category": "Biomarkers & Lipids",
+    "question": "What is the clinical significance of a serum cholesterol level exceeding 280 mg/dL in cardiovascular risk stratification?",
+    "ground_truth_answer": "A serum cholesterol level above 280 mg/dL indicates severe hypercholesterolemia, substantially accelerating atherogenesis, plaque rupture risk, and long-term incidence of acute coronary syndrome.",
+    "ground_truth_contexts": [
+      "Severely elevated serum cholesterol levels (>240-280 mg/dL) promote low-density lipoprotein (LDL) accumulation and oxidation within arterial intimal walls, accelerating atheroma formation and significantly multiplying cardiovascular morbidity and mortality."
+    ]
+  },
+  {
+    "id": "EVAL_004",
+    "category": "ECG & ST-Segment Dynamics",
+    "question": "What does downsloping ST-segment slope indicate during peak cardiac stress compared to upsloping slope?",
+    "ground_truth_answer": "Downsloping ST-segment depression is the most specific and severe electrocardiographic indicator of extensive myocardial ischemia and multi-vessel coronary artery disease, whereas rapid upsloping ST depression is often non-diagnostic or associated with lower ischemic burden.",
+    "ground_truth_contexts": [
+      "Downsloping ST-segment depression during peak exercise has the highest diagnostic specificity and positive predictive value for severe coronary artery disease, whereas upsloping ST changes frequently represent milder ischemia or benign physiological tachycardia response."
+    ]
+  },
+  {
+    "id": "EVAL_005",
+    "category": "Hemodynamics & Vitals",
+    "question": "How does a resting systolic blood pressure exceeding 160 mmHg influence cardiovascular mortality and ventricular remodeling?",
+    "ground_truth_answer": "Stage 2 systolic hypertension above 160 mmHg markedly increases left ventricular afterload, promoting progressive left ventricular hypertrophy (LVH), coronary microvascular dysfunction, arterial stiffness, and elevated risk of heart failure and myocardial infarction.",
+    "ground_truth_contexts": [
+      "Chronic resting systolic blood pressure elevation above 160 mmHg imposes excessive mechanical afterload on the myocardium, triggering concentric left ventricular hypertrophy, increased myocardial wall stress, and accelerated coronary atherosclerosis."
+    ]
+  },
+  {
+    "id": "EVAL_006",
+    "category": "Biomarkers & Lipids",
+    "question": "What role does elevated fasting blood sugar (>120 mg/dL) play in accelerating diabetic coronary vasculopathy?",
+    "ground_truth_answer": "Elevated fasting blood sugar (>120 mg/dL) reflects impaired glycemic control and diabetes mellitus, which induces endothelial dysfunction, advanced glycation end-product (AGE) accumulation, vascular inflammation, and diffuse multi-vessel coronary artery disease.",
+    "ground_truth_contexts": [
+      "Fasting blood glucose levels greater than 120 mg/dL denote hyperglycemia, promoting oxidative stress, chronic low-grade vascular inflammation, and rapid coronary plaque progression, frequently leading to silent myocardial ischemia."
+    ]
+  },
+  {
+    "id": "EVAL_007",
+    "category": "ECG & ST-Segment Dynamics",
+    "question": "What are the clinical implications of left ventricular hypertrophy (LVH) identified on resting ECG?",
+    "ground_truth_answer": "Resting ECG evidence of left ventricular hypertrophy (LVH) reflects chronic cardiac pressure or volume overload, resulting in increased myocardial oxygen consumption, decreased coronary flow reserve, and heightened vulnerability to ventricular arrhythmias and sudden cardiac death.",
+    "ground_truth_contexts": [
+      "Left ventricular hypertrophy detected on resting electrocardiogram signifies compensatory myocardial remodeling due to chronic hypertension or aortic stenosis, and is an independent predictor of adverse cardiovascular events, heart failure, and stroke."
+    ]
+  },
+  {
+    "id": "EVAL_008",
+    "category": "Nuclear & Perfusion Imaging",
+    "question": "What is the difference between a reversible defect and a fixed defect on thallium-201 myocardial perfusion scintigraphy?",
+    "ground_truth_answer": "A reversible thallium defect indicates stress-induced myocardial ischemia with viable, salvageable myocardium upon rest redistribution, whereas a fixed defect indicates non-viable scar tissue or prior myocardial infarction.",
+    "ground_truth_contexts": [
+      "In myocardial perfusion scintigraphy (thallium scan), a reversible defect that normalizes on delayed rest imaging represents viable ischemic myocardium amenable to revascularization, whereas a persistent fixed defect denotes established fibrous scar from prior myocardial infarction."
+    ]
+  },
+  {
+    "id": "EVAL_009",
+    "category": "Angina & Symptoms",
+    "question": "How is typical angina pectoris distinguished clinically from atypical angina and non-anginal chest pain?",
+    "ground_truth_answer": "Typical angina meets all three Diamond-Forrester criteria: substernal chest discomfort, provoked by exertion or emotional stress, and relieved by rest or nitroglycerin. Atypical angina meets only two of these criteria, while non-anginal pain meets one or none.",
+    "ground_truth_contexts": [
+      "Clinical classification of chest pain defines typical angina as meeting three classic features: retrosternal pressure/heaviness, precipitation by exertion, and prompt relief with rest or nitrates within minutes. Atypical angina satisfies exactly two features, and non-anginal pain satisfies one or zero."
+    ]
+  },
+  {
+    "id": "EVAL_010",
+    "category": "Hemodynamics & Vitals",
+    "question": "Why is an impaired maximum heart rate response (chronotropic incompetence) during stress testing clinically significant?",
+    "ground_truth_answer": "Chronotropic incompetence—failure to achieve at least 85% of the age-predicted maximum heart rate during maximal exercise—is an independent predictor of severe coronary artery disease, autonomic dysfunction, and all-cause cardiovascular mortality.",
+    "ground_truth_contexts": [
+      "Inability of the heart rate to appropriately increase with exercise (chronotropic incompetence, failure to achieve 85% maximum predicted heart rate) reflects sinus node dysfunction, severe underlying ischemia, or autonomic dysregulation, and correlates strongly with poor long-term prognosis."
+    ]
+  },
+  {
+    "id": "EVAL_011",
+    "category": "CAD Risk Stratification",
+    "question": "How does multi-vessel fluoroscopy involvement (number of major vessels colored 1 to 3) affect coronary revascularization planning?",
+    "ground_truth_answer": "Fluoroscopic visualization of severe stenosis in 2 or 3 major epicardial coronary vessels indicates extensive multi-vessel disease, which often warrants coronary artery bypass graft (CABG) surgery or complex multi-vessel percutaneous coronary intervention (PCI) over medical therapy alone.",
+    "ground_truth_contexts": [
+      "Fluoroscopic identification of major coronary vessels with >50% luminal diameter narrowing stratifies disease burden: single-vessel disease is often managed with PCI or medical therapy, whereas multi-vessel disease (2-3 vessels) with high anatomic complexity frequently benefits from surgical revascularization (CABG)."
+    ]
+  },
+  {
+    "id": "EVAL_012",
+    "category": "Angina & Symptoms",
+    "question": "Why do female and elderly patients frequently present with asymptomatic or atypical ischemic heart disease?",
+    "ground_truth_answer": "Female and elderly patients often experience altered nociceptive signaling, diabetic autonomic neuropathy, or coronary microvascular dysfunction, presenting with 'anginal equivalents' such as exertional dyspnea, fatigue, nausea, or asymptomatic ischemia rather than substernal crushing pain.",
+    "ground_truth_contexts": [
+      "Atypical presentations and asymptomatic (silent) myocardial ischemia are disproportionately prevalent among females, elderly individuals, and diabetics due to autonomic sensory neuropathy, altered pain threshold processing, and diffuse microvascular coronary disease."
+    ]
+  },
+  {
+    "id": "EVAL_013",
+    "category": "CAD Risk Stratification",
+    "question": "What criteria define severe CAD outcome (fluoroscopic grade 3 or 4) in cardiovascular staging?",
+    "ground_truth_answer": "Severe CAD (outcome 3 or 4) is characterized by high-grade stenosis in 3 major epicardial coronary vessels or significant left main coronary artery disease, accompanied by high ischemic burden, marked ST depression, and elevated risk of major adverse cardiac events (MACE).",
+    "ground_truth_contexts": [
+      "In clinical angiography datasets, diagnosis outcome grades 3 and 4 represent severe multi-vessel coronary artery disease with significant luminal narrowing across major coronary territories, associated with critical perfusion deficits and severe clinical risk."
+    ]
+  },
+  {
+    "id": "EVAL_014",
+    "category": "ECG & ST-Segment Dynamics",
+    "question": "What is the physiological difference between ST depression (oldpeak) and ST elevation on an electrocardiogram?",
+    "ground_truth_answer": "ST-segment depression indicates subendocardial ischemia where the inner ventricular wall is hypoperfused, whereas ST-segment elevation reflects acute transmural (full-thickness) myocardial injury and epicardial coronary occlusion requiring immediate emergent reperfusion.",
+    "ground_truth_contexts": [
+      "ST-segment depression represents non-transmural subendocardial ischemia commonly observed during stress-induced flow mismatch, whereas ST elevation denotes acute transmural myocardial infarction caused by acute complete epicardial thrombotic coronary occlusion."
+    ]
+  },
+  {
+    "id": "EVAL_015",
+    "category": "Biomarkers & Lipids",
+    "question": "How do combined hypercholesterolemia and hypertension synergistically accelerate coronary atherosclerosis?",
+    "ground_truth_answer": "Hypertension generates hemodynamic shear stress that injures the vascular endothelium, increasing permeability and facilitating the entry and retention of circulating LDL cholesterol particles into the subendothelial space, which accelerates atherosclerotic plaque growth and calcification.",
+    "ground_truth_contexts": [
+      "The co-existence of high blood pressure and elevated serum cholesterol exerts a synergistic pathological effect: hypertension causes endothelial mechanical injury and oxidative stress, facilitating rapid subendothelial accumulation and oxidation of atherogenic lipoproteins."
+    ]
+  },
+  {
+    "id": "EVAL_016",
+    "category": "Hemodynamics & Vitals",
+    "question": "What is the target resting blood pressure recommended in clinical guidelines for secondary prevention in CAD patients?",
+    "ground_truth_answer": "Clinical practice guidelines (AHA/ACC and ESC) recommend a target blood pressure of less than 130/80 mmHg for patients with established coronary artery disease to reduce recurrent ischemic events and preserve ventricular function.",
+    "ground_truth_contexts": [
+      "For individuals with established coronary heart disease, contemporary clinical guidelines advocate maintaining resting blood pressure below 130/80 mmHg to reduce myocardial oxygen demand, reduce pulse pressure stress, and minimize recurrent cardiovascular events."
+    ]
+  },
+  {
+    "id": "EVAL_017",
+    "category": "CAD Risk Stratification",
+    "question": "How does age stratify baseline cardiovascular risk in men versus women presenting with non-anginal chest pain?",
+    "ground_truth_answer": "Cardiovascular risk increases progressively with advancing age; men experience higher risk starting after age 45, whereas women experience a steep rise in postmenopausal years (after age 55) due to the loss of cardioprotective endogenous estrogen.",
+    "ground_truth_contexts": [
+      "Age is an independent cardiovascular risk factor: men face accelerating atherogenic risk beyond age 45, while women generally exhibit a 10-year delay until postmenopausal estrogen decline after age 55, at which point vascular stiffness and CAD rates converge."
+    ]
+  },
+  {
+    "id": "EVAL_018",
+    "category": "Nuclear & Perfusion Imaging",
+    "question": "How does stress myocardial perfusion imaging assist in distinguishing true ischemic defects from artifactual attenuation?",
+    "ground_truth_answer": "Stress myocardial perfusion scintigraphy compares stress images directly with rest redistribution images and electrocardiographic gating (evaluating regional wall motion and thickening) to differentiate fixed attenuation artifacts (such as diaphragmatic or breast tissue attenuation) from true ischemic defects.",
+    "ground_truth_contexts": [
+      "Gated myocardial perfusion imaging and rest-redistribution protocols allow clinicians to differentiate real ischemic hypoperfusion from soft tissue attenuation artifacts by correlating tracer uptake with systolic myocardial wall thickening."
+    ]
+  },
+  {
+    "id": "EVAL_019",
+    "category": "Angina & Symptoms",
+    "question": "What are the primary pharmacological mechanisms of sublingual nitroglycerin in relieving acute angina pectoris?",
+    "ground_truth_answer": "Sublingual nitroglycerin is converted to nitric oxide in vascular smooth muscle, causing systemic venous dilation (which reduces ventricular preload and myocardial wall stress) and epicardial coronary vasodilation, promptly restoring myocardial oxygen supply-demand balance.",
+    "ground_truth_contexts": [
+      "Nitroglycerin acts as a potent vasodilator that releases nitric oxide, causing predominantly venodilation that decreases ventricular filling pressure (preload) and myocardial oxygen demand, alongside dilating large epicardial coronary arteries to relieve angina."
+    ]
+  },
+  {
+    "id": "EVAL_020",
+    "category": "ECG & ST-Segment Dynamics",
+    "question": "What electrocardiographic criteria are used on standard 12-lead ECG to diagnose left ventricular hypertrophy (e.g. Sokolow-Lyon index)?",
+    "ground_truth_answer": "The Sokolow-Lyon voltage criterion defines LVH when the sum of the S wave depth in V1 and the R wave height in V5 or V6 exceeds 35 mm (3.5 mV), often accompanied by secondary ST-T strain patterns in the lateral leads.",
+    "ground_truth_contexts": [
+      "Sokolow-Lyon index criteria for left ventricular hypertrophy require S(V1) + R(V5/V6) > 35 mm, reflecting increased left ventricular electrical vector magnitude from thickened myocardial mass, frequently accompanied by asymmetric T-wave inversions."
+    ]
+  },
+  {
+    "id": "EVAL_021",
+    "category": "Biomarkers & Lipids",
+    "question": "Why are statins considered first-line pharmacological therapy in patients with hypercholesterolemia and established CAD?",
+    "ground_truth_answer": "Statins competitively inhibit HMG-CoA reductase to lower LDL-cholesterol, but also confer pleiotropic cardiovascular benefits including endothelial function improvement, reduction of vascular inflammation, and stabilization of vulnerable atherosclerotic plaques.",
+    "ground_truth_contexts": [
+      "HMG-CoA reductase inhibitors (statins) provide primary and secondary prevention benefits by substantially lowering atherogenic LDL particles and exerting pleiotropic effects: plaque stabilization, anti-inflammatory modulation, and attenuation of plaque rupture."
+    ]
+  },
+  {
+    "id": "EVAL_022",
+    "category": "CAD Risk Stratification",
+    "question": "What is the clinical significance of exercise-induced ventricular arrhythmias during recovery after a stress test?",
+    "ground_truth_answer": "Frequent or complex ventricular ectopy occurring during the post-exercise recovery phase reflects delayed autonomic parasympathetic reactivation, severe myocardial ischemia, and significantly higher long-term risk of cardiovascular death.",
+    "ground_truth_contexts": [
+      "Ventricular arrhythmias occurring during the cool-down and recovery phase of exercise testing indicate impaired vagal reactivation and underlying ischemic myocardial substrate, serving as a powerful independent predictor of cardiac mortality."
+    ]
+  },
+  {
+    "id": "EVAL_023",
+    "category": "Angina & Symptoms",
+    "question": "What is Microvascular Angina (Cardiac Syndrome X) and how does it present clinically?",
+    "ground_truth_answer": "Microvascular Angina involves typical exertional chest pain and objective ischemic ECG changes in patients with angiographically normal or non-obstructive epicardial coronary arteries, caused by coronary microvascular dysfunction and impaired endothelial vasodilation.",
+    "ground_truth_contexts": [
+      "Cardiac Syndrome X (microvascular angina) is characterized by exertional angina, positive exercise stress test for ischemia, and normal epicardial coronary angiograms, driven by structural and functional abnormalities in the coronary microcirculation (<500 μm vessels)."
+    ]
+  },
+  {
+    "id": "EVAL_024",
+    "category": "Hemodynamics & Vitals",
+    "question": "How does a hypertensive response to exercise (peak systolic BP > 210 mmHg in men or > 190 mmHg in women) affect long-term cardiovascular prognosis?",
+    "ground_truth_answer": "An exaggerated hypertensive response during exercise reflects latent systemic vascular stiffness, impaired endothelial nitric oxide release, and heightened risk for future persistent resting hypertension, left ventricular hypertrophy, and cardiovascular events.",
+    "ground_truth_contexts": [
+      "Exaggerated blood pressure surges during treadmill exercise testing (systolic BP exceeding 210 mmHg in males or 190 mmHg in females) predict development of unmasked hypertension, accelerated arterial stiffening, and subclinical target organ damage."
+    ]
+  },
+  {
+    "id": "EVAL_025",
+    "category": "CAD Risk Stratification",
+    "question": "How does comprehensive cardiovascular risk factor modification (smoking cessation, lipid control, BP management) reduce future MACE rates?",
+    "ground_truth_answer": "Aggressive multimodal risk factor control halts atherosclerotic progression, stabilizes vulnerable thin-cap fibroatheromas against plaque rupture, preserves endothelial nitric oxide bioavailability, and reduces Major Adverse Cardiac Events (MACE) by 40% to 70%.",
+    "ground_truth_contexts": [
+      "Intensive lifestyle modification paired with guideline-directed medical therapy targeting hypertension, dyslipidemia, and smoking cessation significantly diminishes systemic vascular inflammation, stabilizes coronary plaque architecture, and dramatically cuts long-term ischemic recurrence."
+    ]
+  }
+]

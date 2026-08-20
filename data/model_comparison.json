@@ -1,0 +1,334 @@
+{
+  "evaluation_date": "2026-08-20 00:32:02",
+  "dataset_size": 10,
+  "retrieval_k": 5,
+  "models": {
+    "medical_model": {
+      "name": "pritamdeka/S-PubMedBert-MS-MARCO",
+      "dimension": 768,
+      "domain": "Biomedical / PubMedBERT",
+      "summary_metrics": {
+        "context_precision": 0.7433,
+        "context_recall": 0.95,
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.9,
+        "overall_rag_score": 0.8983,
+        "average_latency_sec": 4.61,
+        "total_samples": 10
+      },
+      "sample_results": [
+        {
+          "id": "EVAL_001",
+          "category": "Patient_Lookup",
+          "question": "What are the clinical findings, resting blood pressure, and cholesterol level for patient P1007?",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.763,
+          "retrieved_patient_ids": []
+        },
+        {
+          "id": "EVAL_002",
+          "category": "Disease_Severity",
+          "question": "Which patients have severe coronary artery disease (outcome 3 or 4) with marked ST depression?",
+          "context_precision": 0.4778,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.8319,
+          "latency_sec": 0.834,
+          "retrieved_patient_ids": [
+            "KB_003",
+            "KB_001",
+            "P1596",
+            "P1676",
+            "P1593"
+          ]
+        },
+        {
+          "id": "EVAL_003",
+          "category": "Patient_Lookup",
+          "question": "What is the diagnosis outcome, chest pain type, and ECG result for patient P1001?",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.001,
+          "retrieved_patient_ids": []
+        },
+        {
+          "id": "EVAL_004",
+          "category": "Biomarker_Cohort",
+          "question": "Identify patients with hypercholesterolemia with serum cholesterol level exceeding 280 mg/dL and exercise-induced angina.",
+          "context_precision": 0.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.7125,
+          "latency_sec": 12.461,
+          "retrieved_patient_ids": [
+            "KB_002",
+            "KB_006",
+            "KB_001",
+            "KB_004",
+            "KB_008"
+          ]
+        },
+        {
+          "id": "EVAL_005",
+          "category": "Patient_Lookup",
+          "question": "What are the clinical indicators and fasting blood sugar status for patient P1000?",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.002,
+          "retrieved_patient_ids": []
+        },
+        {
+          "id": "EVAL_006",
+          "category": "Symptom_Risk",
+          "question": "Which patients present with atypical angina chest pain and normal resting ECG?",
+          "context_precision": 0.4778,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.8319,
+          "latency_sec": 16.454,
+          "retrieved_patient_ids": [
+            "KB_005",
+            "KB_001",
+            "P1848",
+            "P1348",
+            "P1319"
+          ]
+        },
+        {
+          "id": "EVAL_007",
+          "category": "Patient_Lookup",
+          "question": "What is the cardiovascular profile, exercise angina status, and ST depression for patient P1009?",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.001,
+          "retrieved_patient_ids": []
+        },
+        {
+          "id": "EVAL_008",
+          "category": "Biomarker_Cohort",
+          "question": "Which patients have resting systolic blood pressure exceeding 150 mmHg indicating stage 2 hypertension?",
+          "context_precision": 0.4778,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.8319,
+          "latency_sec": 15.556,
+          "retrieved_patient_ids": [
+            "KB_007",
+            "KB_004",
+            "P1264",
+            "P1898",
+            "P1825"
+          ]
+        },
+        {
+          "id": "EVAL_009",
+          "category": "Patient_Lookup",
+          "question": "What are the clinical findings, age, and maximum heart rate for patient P1003?",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.001,
+          "retrieved_patient_ids": []
+        },
+        {
+          "id": "EVAL_010",
+          "category": "Symptom_Risk",
+          "question": "Identify patients with left ventricular hypertrophy on resting ECG and elevated fasting blood sugar.",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.033,
+          "retrieved_patient_ids": []
+        }
+      ]
+    },
+    "baseline_model": {
+      "name": "sentence-transformers/all-MiniLM-L6-v2",
+      "dimension": 384,
+      "domain": "General Domain",
+      "summary_metrics": {
+        "context_precision": 0.8717,
+        "context_recall": 0.95,
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.9,
+        "overall_rag_score": 0.9304,
+        "average_latency_sec": 6.77,
+        "total_samples": 10
+      },
+      "sample_results": [
+        {
+          "id": "EVAL_001",
+          "category": "Patient_Lookup",
+          "question": "What are the clinical findings, resting blood pressure, and cholesterol level for patient P1007?",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.006,
+          "retrieved_patient_ids": []
+        },
+        {
+          "id": "EVAL_002",
+          "category": "Disease_Severity",
+          "question": "Which patients have severe coronary artery disease (outcome 3 or 4) with marked ST depression?",
+          "context_precision": 0.6792,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.8823,
+          "latency_sec": 17.699,
+          "retrieved_patient_ids": [
+            "KB_003",
+            "P1796",
+            "P1739",
+            "P1307",
+            "P1315"
+          ]
+        },
+        {
+          "id": "EVAL_003",
+          "category": "Patient_Lookup",
+          "question": "What is the diagnosis outcome, chest pain type, and ECG result for patient P1001?",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.005,
+          "retrieved_patient_ids": []
+        },
+        {
+          "id": "EVAL_004",
+          "category": "Biomarker_Cohort",
+          "question": "Identify patients with hypercholesterolemia with serum cholesterol level exceeding 280 mg/dL and exercise-induced angina.",
+          "context_precision": 0.6792,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.8823,
+          "latency_sec": 16.629,
+          "retrieved_patient_ids": [
+            "KB_002",
+            "P1372",
+            "P1366",
+            "P1269",
+            "P1395"
+          ]
+        },
+        {
+          "id": "EVAL_005",
+          "category": "Patient_Lookup",
+          "question": "What are the clinical indicators and fasting blood sugar status for patient P1000?",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.003,
+          "retrieved_patient_ids": []
+        },
+        {
+          "id": "EVAL_006",
+          "category": "Symptom_Risk",
+          "question": "Which patients present with atypical angina chest pain and normal resting ECG?",
+          "context_precision": 0.6792,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.8823,
+          "latency_sec": 16.989,
+          "retrieved_patient_ids": [
+            "KB_005",
+            "P1366",
+            "P1289",
+            "P1443",
+            "P1336"
+          ]
+        },
+        {
+          "id": "EVAL_007",
+          "category": "Patient_Lookup",
+          "question": "What is the cardiovascular profile, exercise angina status, and ST depression for patient P1009?",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.002,
+          "retrieved_patient_ids": []
+        },
+        {
+          "id": "EVAL_008",
+          "category": "Biomarker_Cohort",
+          "question": "Which patients have resting systolic blood pressure exceeding 150 mmHg indicating stage 2 hypertension?",
+          "context_precision": 0.6792,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.8823,
+          "latency_sec": 16.344,
+          "retrieved_patient_ids": [
+            "KB_007",
+            "P1052",
+            "P1116",
+            "P1232",
+            "P1237"
+          ]
+        },
+        {
+          "id": "EVAL_009",
+          "category": "Patient_Lookup",
+          "question": "What are the clinical findings, age, and maximum heart rate for patient P1003?",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.002,
+          "retrieved_patient_ids": []
+        },
+        {
+          "id": "EVAL_010",
+          "category": "Symptom_Risk",
+          "question": "Identify patients with left ventricular hypertrophy on resting ECG and elevated fasting blood sugar.",
+          "context_precision": 1.0,
+          "context_recall": 0.95,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "overall_score": 0.9625,
+          "latency_sec": 0.021,
+          "retrieved_patient_ids": []
+        }
+      ]
+    }
+  },
+  "metric_differences": {
+    "context_precision": -0.1284,
+    "context_recall": 0.0,
+    "faithfulness": 0.0,
+    "answer_relevancy": 0.0,
+    "overall_rag_score": -0.0321
+  }
+}

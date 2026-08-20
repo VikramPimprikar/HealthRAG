@@ -90,8 +90,9 @@ VECTOR_DB_DIR.mkdir(exist_ok=True, parents=True)
 # RAG PIPELINE CONFIGURATION
 # ============================================================
 
-# Embedding model to use
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+# Embedding model to use (Domain-specific Medical Transformer)
+EMBEDDING_MODEL = "pritamdeka/S-PubMedBert-MS-MARCO"
+BASELINE_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 # Vector database path
 VECTOR_DB_PATH = str(VECTOR_DB_DIR / 'medical_vector_db')
@@ -102,6 +103,14 @@ RAG_CHUNK_OVERLAP = 50
 
 # Number of documents to retrieve by default
 DEFAULT_RETRIEVE_K = 3
+
+# RAG Evaluation configuration
+EVALUATION_DATASET_FILE = DATA_DIR / 'rag_evaluation_dataset.json'
+EVALUATION_RESULTS_FILE = DATA_DIR / 'evaluation_results.json'
+EVALUATION_RESULTS_CSV = DATA_DIR / 'evaluation_results.csv'
+MODEL_COMPARISON_FILE = DATA_DIR / 'model_comparison.json'
+MODEL_COMPARISON_CSV = DATA_DIR / 'model_comparison.csv'
+
 
 # ============================================================
 # DATA PREPROCESSING CONFIGURATION

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "KB_001",
+    "title": "Symptoms of Heart Disease and Coronary Artery Disease",
+    "category": "Cardiovascular Symptoms",
+    "text": "Common symptoms of coronary artery disease (CAD) and heart disease include chest pain or discomfort (angina pectoris), pressure, tightness, or squeezing sensations in the chest or arms that may radiate to the neck, jaw, shoulder, or back. Additional symptoms include shortness of breath (dyspnea) during exertion or rest, unexplained fatigue, lightheadedness, dizziness, palpitations, cold sweats, and swelling in the legs, ankles, or feet (edema). In some patients, especially women and elderly individuals, symptoms may be atypical, presenting as nausea, indigestion, epigastric discomfort, or silent ischemia without classic chest pain."
+  },
+  {
+    "id": "KB_002",
+    "title": "Causes and Pathophysiology of High Cholesterol (Hypercholesterolemia)",
+    "category": "Lipids & Biomarkers",
+    "text": "High serum cholesterol (hypercholesterolemia, typically defined as total cholesterol > 200 mg/dL or LDL > 130 mg/dL, with severe hypercholesterolemia exceeding 240-280 mg/dL) is caused by a combination of genetic factors (such as familial hypercholesterolemia and LDL receptor mutations) and lifestyle factors. Major lifestyle causes include diets rich in saturated and trans fats, physical inactivity, obesity, and smoking. Secondary medical causes include type 2 diabetes mellitus, hypothyroidism, chronic kidney disease, and cholestatic liver disease. Elevated low-density lipoprotein (LDL) particles infiltrate arterial endothelial walls, undergoing oxidative modification and promoting foam cell formation, atheromatous plaque development, and coronary artery narrowing."
+  },
+  {
+    "id": "KB_003",
+    "title": "Mechanisms and Clinical Significance of ST-Segment Depression",
+    "category": "Electrocardiography & Diagnostics",
+    "text": "ST-segment depression (measured as the 'oldpeak' value in millimeters on ECG during exercise stress testing) is an electrocardiographic indicator of subendocardial myocardial ischemia. During cardiac stress or exercise, myocardial oxygen demand increases. When stenosed coronary arteries cannot supply adequate blood flow, the subendocardium becomes ischemic, altering the electrical potential during ventricular repolarization. Significant ST depression is defined as horizontal or downsloping displacement >= 1.0 mm (0.1 mV) occurring 60 to 80 ms after the J-point. Downsloping ST depression indicates severe multi-vessel CAD and high cardiovascular risk, whereas flat ST depression indicates moderate ischemia, and upsloping ST depression may represent milder ischemia or rapid tachycardia."
+  },
+  {
+    "id": "KB_004",
+    "title": "Cardiovascular Disease Risk Factors and Prevention",
+    "category": "Risk Factors & Prevention",
+    "text": "Major non-modifiable risk factors for cardiovascular disease include advancing age (especially men > 45 and women > 55), male biological sex, and family history of premature coronary heart disease. Modifiable risk factors include systemic hypertension (resting blood pressure > 130/80 mmHg), hyperlipidemia (elevated total cholesterol and LDL, low HDL), cigarette smoking, insulin resistance and diabetes mellitus (fasting blood sugar > 120 mg/dL), obesity (elevated BMI), sedentary lifestyle, chronic psychological stress, and unhealthy diet. Managing blood pressure, lowering LDL cholesterol, controlling blood glucose, exercising regularly, and smoking cessation substantially reduce cardiovascular morbidity."
+  },
+  {
+    "id": "KB_005",
+    "title": "Chest Pain Classifications: Typical, Atypical, Non-Anginal, and Asymptomatic",
+    "category": "Angina & Clinical Evaluation",
+    "text": "Chest pain is clinically categorized into four distinct types: (1) Typical Angina (Type 1): substernal chest discomfort with characteristic quality and duration, provoked by exertion or emotional stress, and relieved by rest or nitroglycerin. (2) Atypical Angina (Type 2): chest discomfort meeting two of the three typical angina criteria, often seen in women and younger cohorts. (3) Non-Anginal Pain (Type 3): chest discomfort meeting only one or none of the classic features, frequently musculoskeletal or gastrointestinal in origin. (4) Asymptomatic / Silent Ischemia (Type 4): absence of angina despite documented myocardial hypoperfusion or CAD on diagnostic testing."
+  },
+  {
+    "id": "KB_006",
+    "title": "Exercise-Induced Angina and Myocardial Ischemia Pathophysiology",
+    "category": "Pathophysiology & Stress Testing",
+    "text": "Exercise-induced angina (exang) occurs when physical exertion increases heart rate, systolic blood pressure, and left ventricular contractility, sharply escalating myocardial oxygen consumption. In patients with fixed atherosclerotic coronary stenoses, coronary vascular reserve is exhausted, preventing compensatory vasodilation. The resulting supply-demand mismatch causes acute transient subendocardial ischemia, lactic acidosis, and activation of cardiac nociceptive fibers perceived as angina pectoris. The presence of exercise-induced angina strongly correlates with obstructive coronary artery disease."
+  },
+  {
+    "id": "KB_007",
+    "title": "Hypertension Guidelines and Hemodynamic Impact on Cardiac Function",
+    "category": "Hemodynamics & Vitals",
+    "text": "Systemic arterial hypertension is categorized into Stage 1 (systolic BP 130-139 mmHg or diastolic 80-89 mmHg) and Stage 2 (systolic BP >= 140 mmHg or diastolic >= 90 mmHg). Chronic systolic blood pressure elevation exceeding 140-160 mmHg increases left ventricular afterload, promoting progressive concentric left ventricular hypertrophy (LVH), coronary microvascular remodeling, accelerated arterial stiffness, and significantly increased risk of congestive heart failure, ischemic stroke, and myocardial infarction."
+  },
+  {
+    "id": "KB_008",
+    "title": "Impact of Elevated Fasting Blood Sugar and Diabetes on Coronary Vasculature",
+    "category": "Metabolic & Diabetic Vasculopathy",
+    "text": "Fasting blood sugar (fbs) exceeding 120 mg/dL indicates impaired fasting glucose or overt diabetes mellitus. Chronic hyperglycemia accelerates non-enzymatic glycation of arterial proteins, stimulates reactive oxygen species (ROS), induces endothelial nitric oxide synthase dysfunction, and promotes systemic low-grade vascular inflammation. Diabetic patients with coronary artery disease frequently suffer from diffuse multi-vessel involvement, higher incidence of silent myocardial infarction due to autonomic neuropathy, and poorer post-revascularization outcomes."
+  }
+]
