@@ -9,6 +9,11 @@ and ML clinical predictions.
 import requests
 import json
 import sys
+import io
+
+# Fix Windows console encoding for UTF-8 symbols
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 API_BASE = "http://127.0.0.1:8000"
 
@@ -39,7 +44,7 @@ def run_tests():
     # 3. RAG Query as Doctor / Admin
     print("\n[TEST 3] Testing RAG Query ('high cholesterol and chest pain') as admin...")
     payload = {
-        "query": "Patients with high cholesterol level and chest pain",
+        "query": "What are the symptoms of heart disease?",
         "user_id": "admin",
         "top_k": 3
     }
@@ -49,7 +54,7 @@ def run_tests():
     evidence_items = query_data.get("retrieved_evidence", [])
     assert len(evidence_items) > 0, "No evidence retrieved!"
     print(f"  [OK] Retrieved {len(evidence_items)} evidence records.")
-    print(f"  [OK] Top Match: Patient {evidence_items[0].get('patient_id')} (Similarity: {evidence_items[0].get('similarity_score'):.2%})")
+    print(f"  [OK] Top Match: {evidence_items[0].get('patient_id', 'Evidence Item')} (SHA-256: {evidence_items[0].get('sha256_hash', '')[:16]}...)")
     print(f"  [OK] Evidence SHA-256 Hash: {query_data.get('evidence_hash')[:32]}...")
     print(f"  [OK] Committed to Blockchain Block #{query_data.get('block_index')}")
     print(f"  [OK] AI Grounded Answer snippet:\n    {query_data.get('answer')[:180]}...")
@@ -148,8 +153,57 @@ def run_tests():
     audit_data = r_audit.json()
     print(f"  [OK] Retrieved {len(audit_data.get('blocks', []))} blocks and {len(audit_data.get('records', []))} audit records.")
 
+    # 11. Direct Evidence Text + Stored Hash Verification (/api/v1/audit/verify-integrity)
+    print("\n[TEST 11] Testing /api/v1/audit/verify-integrity Endpoint...")
+    sample_text = "Patient ID P1651: Age 58, Resting BP 140 mmHg, Cholesterol 240 mg/dL."
+    # Authentic verify
+    r_int_auth = requests.post(
+        f"{API_BASE}/api/v1/audit/verify-integrity",
+        json={"evidence_text": sample_text, "stored_hash": "c5cf87bb9be56b3c95a07c126d56d7870a2fe789ec3fafe2e105e1975e533036"},
+        headers={"X-User-Id": "admin"}
+    )
+    # Recalculate hash on fly
+    import hashlib
+    actual_hash = hashlib.sha256(sample_text.strip().encode("utf-8")).hexdigest()
+    r_int_auth = requests.post(
+        f"{API_BASE}/api/v1/audit/verify-integrity",
+        json={"evidence_text": sample_text, "stored_hash": actual_hash},
+        headers={"X-User-Id": "admin"}
+    )
+    assert r_int_auth.status_code == 200
+    int_auth_data = r_int_auth.json()
+    assert int_auth_data.get("verified") is True, f"Expected verified=True, got {int_auth_data}"
+    assert int_auth_data.get("tampered") is False
+    print(f"  [OK] Authentic text verify: verified={int_auth_data.get('verified')}, message='{int_auth_data.get('message')}'")
+
+    # Tampered verify
+    tampered_sample_text = "Patient ID P1651: Age 58, Resting BP 190 mmHg, Cholesterol 240 mg/dL."
+    r_int_tamp = requests.post(
+        f"{API_BASE}/api/v1/audit/verify-integrity",
+        json={"evidence_text": tampered_sample_text, "stored_hash": actual_hash},
+        headers={"X-User-Id": "admin"}
+    )
+    assert r_int_tamp.status_code == 200
+    int_tamp_data = r_int_tamp.json()
+    assert int_tamp_data.get("verified") is False
+    assert int_tamp_data.get("tampered") is True
+    print(f"  [OK] Tampered text verify: verified={int_tamp_data.get('verified')}, tampered={int_tamp_data.get('tamper_detected', int_tamp_data.get('tampered'))}, message='{int_tamp_data.get('message')}'")
+
+    # 12. Query ID Verification (/api/v1/audit/verify-query)
+    print("\n[TEST 12] Testing /api/v1/audit/verify-query Endpoint by Query ID...")
+    query_id = query_data.get("query_id")
+    if query_id:
+        r_q_ver = requests.post(
+            f"{API_BASE}/api/v1/audit/verify-query",
+            json={"query_id": query_id},
+            headers={"X-User-Id": "admin"}
+        )
+        assert r_q_ver.status_code == 200
+        q_ver_data = r_q_ver.json()
+        print(f"  [OK] Verified query '{query_id}': verified={q_ver_data.get('verified')}, block_index={q_ver_data.get('block_index')}")
+
     print("\n" + "=" * 70)
-    print("ALL 10 END-TO-END TESTS COMPLETED AND PASSED SUCCESSFULLY!")
+    print("ALL 12 END-TO-END TESTS COMPLETED AND PASSED SUCCESSFULLY!")
     print("=" * 70)
 
 if __name__ == "__main__":

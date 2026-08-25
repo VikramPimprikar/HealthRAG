@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function AuditDashboard({ activeUser, apiBase }) {
+  const navigate = useNavigate();
   const [report, setReport] = useState(null);
   const [chainVerification, setChainVerification] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -9,6 +11,7 @@ function AuditDashboard({ activeUser, apiBase }) {
   const [viewMode, setViewMode] = useState("blocks"); // "blocks" or "records"
   const [filterAction, setFilterAction] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [blockVerifyResult, setBlockVerifyResult] = useState({});
 
   const loadAuditLogs = async () => {
     setLoading(true);
@@ -60,6 +63,29 @@ function AuditDashboard({ activeUser, apiBase }) {
     }
   };
 
+  const handleVerifyBlockIntegrity = async (blockIndex) => {
+    try {
+      const response = await fetch(`${apiBase}/api/v1/audit/verify-block`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Id": activeUser
+        },
+        body: JSON.stringify({ block_index: blockIndex })
+      });
+
+      if (response.ok) {
+        const res = await response.json();
+        setBlockVerifyResult((prev) => ({
+          ...prev,
+          [blockIndex]: res
+        }));
+      }
+    } catch (e) {
+      console.error("Block integrity verify error:", e);
+    }
+  };
+
   useEffect(() => {
     loadAuditLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -87,7 +113,7 @@ function AuditDashboard({ activeUser, apiBase }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <h1 style={{ fontSize: "24px", fontWeight: "700", color: "#fff", marginBottom: "6px" }}>
-              ⛓️ Immutable Blockchain Audit Trail
+              ⛓️ Immutable Blockchain Audit Trail &amp; Evidence Hashes
             </h1>
             <p style={{ color: "var(--text-secondary)", fontSize: "14px", maxWidth: "800px" }}>
               Every clinical query, ML prediction, and access decision is cryptographically hashed with SHA-256 and committed to an append-only verifiable blockchain.
@@ -162,8 +188,8 @@ function AuditDashboard({ activeUser, apiBase }) {
         <div
           className="fade-in"
           style={{
-            background: chainVerification.is_valid ? "var(--success-bg)" : "var(--danger-bg)",
-            border: `1px solid ${chainVerification.is_valid ? "var(--success-border)" : "var(--danger-border)"}`,
+            background: chainVerification.is_valid ? "rgba(16, 185, 129, 0.15)" : "rgba(244, 63, 94, 0.15)",
+            border: `1px solid ${chainVerification.is_valid ? "#10b981" : "#f43f5e"}`,
             padding: "18px 24px",
             borderRadius: "var(--radius-md)",
             display: "flex",
@@ -172,13 +198,15 @@ function AuditDashboard({ activeUser, apiBase }) {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "24px" }}>{chainVerification.is_valid ? "✓" : "⚠️"}</span>
+            <span style={{ fontSize: "24px" }}>{chainVerification.is_valid ? "✅" : "⚠️"}</span>
             <div>
-              <strong style={{ display: "block", fontSize: "15px", color: chainVerification.is_valid ? "var(--success-text)" : "var(--danger-text)" }}>
-                {chainVerification.is_valid ? "Blockchain Verification Succeeded" : "Integrity Verification Failed"}
+              <strong style={{ display: "block", fontSize: "15px", color: chainVerification.is_valid ? "#34d399" : "#fb7185" }}>
+                {chainVerification.is_valid ? "✅ Blockchain Integrity Verified" : "⚠️ Blockchain Integrity Compromised"}
               </strong>
               <span style={{ fontSize: "13px", color: "#cbd5e1" }}>
-                Verified {chainVerification.total_blocks} block(s). All hashes and cryptographic previous-block links are unbroken.
+                {chainVerification.is_valid
+                  ? `All ${chainVerification.total_blocks} blocks are valid and correctly linked.`
+                  : (chainVerification.reason || chainVerification.message || `Block #${chainVerification.error_at_index} has been modified.`)}
               </span>
             </div>
           </div>
@@ -205,71 +233,55 @@ function AuditDashboard({ activeUser, apiBase }) {
             borderRadius: "var(--radius-md)",
             display: "flex",
             alignItems: "center",
-            gap: "14px"
+            justifyContent: "space-between"
           }}
         >
-          <span style={{ fontSize: "24px" }}>⛔</span>
-          <div>
-            <strong style={{ display: "block", fontSize: "15px" }}>RBAC Access Control Violation</strong>
-            <span style={{ fontSize: "13px" }}>{error}</span>
-          </div>
+          <span>{error}</span>
+          <button className="btn-secondary" onClick={() => setError(null)}>Dismiss</button>
         </div>
       )}
 
-      {/* CONTROLS & FILTER BAR */}
-      <div
-        className="glass-panel"
-        style={{
-          padding: "14px 20px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "12px"
-        }}
-      >
-        {/* Toggle view mode */}
-        <div style={{ display: "flex", gap: "8px" }}>
+      {/* VIEW SELECTOR & FILTERS */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+        <div className="tab-nav" style={{ margin: 0 }}>
           <button
-            className={viewMode === "blocks" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "6px 14px", fontSize: "13px" }}
+            className={`tab-btn ${viewMode === "blocks" ? "active" : ""}`}
             onClick={() => setViewMode("blocks")}
           >
             ⛓️ Blockchain Blocks ({filteredBlocks.length})
           </button>
           <button
-            className={viewMode === "records" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "6px 14px", fontSize: "13px" }}
+            className={`tab-btn ${viewMode === "records" ? "active" : ""}`}
             onClick={() => setViewMode("records")}
           >
-            📑 Audit Records ({filteredRecords.length})
+            📋 Clinical Audit Records ({filteredRecords.length})
           </button>
         </div>
 
-        {/* Filters */}
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Filter Action:</span>
+        <div style={{ display: "flex", gap: "10px" }}>
           <select
+            className="input-field"
+            style={{ width: "160px", padding: "8px 12px", fontSize: "13px" }}
             value={filterAction}
             onChange={(e) => setFilterAction(e.target.value)}
-            style={{ width: "auto", padding: "6px 10px", fontSize: "12px" }}
           >
             <option value="ALL">All Actions</option>
             <option value="RAG_QUERY">RAG_QUERY</option>
-            <option value="CLINICAL_PREDICTION">CLINICAL_PREDICTION</option>
-            <option value="QUERY_KNOWLEDGE_BASE">QUERY_KNOWLEDGE_BASE</option>
+            <option value="ML_PREDICTION">ML_PREDICTION</option>
+            <option value="ACCESS_DECISION">ACCESS_DECISION</option>
             <option value="GENESIS_BLOCK">GENESIS_BLOCK</option>
           </select>
 
-          <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Status:</span>
           <select
+            className="input-field"
+            style={{ width: "140px", padding: "8px 12px", fontSize: "13px" }}
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            style={{ width: "auto", padding: "6px 10px", fontSize: "12px" }}
           >
             <option value="ALL">All Statuses</option>
             <option value="SUCCESS">SUCCESS</option>
             <option value="DENIED">DENIED</option>
+            <option value="FAILED">FAILED</option>
           </select>
         </div>
       </div>
@@ -288,28 +300,29 @@ function AuditDashboard({ activeUser, apiBase }) {
               {/* Block Header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "10px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span className="badge badge-purple" style={{ fontSize: "13px", padding: "4px 10px", fontWeight: "700" }}>
+                  <span className="badge badge-purple" style={{ fontSize: "13px", padding: "4px 10px" }}>
                     Block #{block.index}
-                  </span>
-                  <span style={{ fontSize: "15px", fontWeight: "700", color: "#fff" }}>
-                    {block.action}
                   </span>
                   <span className={`badge ${block.status === "SUCCESS" ? "badge-success" : "badge-danger"}`}>
                     {block.status}
                   </span>
+                  <span className="badge badge-secondary">{block.action}</span>
+                  {block.provenance?.query_id && (
+                    <span className="badge" style={{ background: "rgba(56, 189, 248, 0.2)", color: "var(--accent-cyan)", border: "1px solid rgba(56, 189, 248, 0.4)" }}>
+                      {block.provenance.query_id}
+                    </span>
+                  )}
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px", color: "var(--text-muted)" }}>
-                  <span>User: <strong style={{ color: "#fff" }}>{block.user_id}</strong></span>
-                  <span>•</span>
-                  <span>{new Date(block.timestamp).toLocaleString()}</span>
-                </div>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  {new Date(block.timestamp).toLocaleString()} · User: <strong style={{ color: "#fff" }}>{block.user_id}</strong>
+                </span>
               </div>
 
-              {/* Hash Details Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px", fontSize: "12px" }}>
+              {/* Hashes Grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "10px", fontSize: "12px", marginBottom: "12px" }}>
                 <div style={{ background: "#080c14", padding: "10px 14px", borderRadius: "8px" }}>
-                  <span style={{ color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>Block Hash:</span>
+                  <span style={{ color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>Block Hash (SHA-256):</span>
                   <span className="hash-code">{block.hash}</span>
                 </div>
 
@@ -317,31 +330,58 @@ function AuditDashboard({ activeUser, apiBase }) {
                   <span style={{ color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>Previous Block Hash:</span>
                   <span className="hash-code">{block.previous_hash}</span>
                 </div>
-
-                {block.query_hash && (
-                  <div style={{ background: "#080c14", padding: "10px 14px", borderRadius: "8px" }}>
-                    <span style={{ color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>Query SHA-256 Hash:</span>
-                    <span className="hash-code">{block.query_hash}</span>
-                  </div>
-                )}
-
-                {block.evidence_hash && (
-                  <div style={{ background: "#080c14", padding: "10px 14px", borderRadius: "8px" }}>
-                    <span style={{ color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>Evidence Bundle SHA-256 Hash:</span>
-                    <span className="hash-code">{block.evidence_hash}</span>
-                  </div>
-                )}
               </div>
 
               {/* Provenance Details */}
               {block.provenance && Object.keys(block.provenance).length > 0 && (
-                <div style={{ background: "rgba(0, 0, 0, 0.2)", padding: "10px 14px", borderRadius: "8px", fontSize: "12px" }}>
-                  <span style={{ color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>Provenance Metadata:</span>
+                <div style={{ background: "rgba(0, 0, 0, 0.2)", padding: "10px 14px", borderRadius: "8px", fontSize: "12px", marginBottom: "12px" }}>
+                  <span style={{ color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>Provenance Metadata (No raw patient text stored on-chain):</span>
                   <pre style={{ color: "#94a3b8", fontSize: "11px", margin: 0, overflow: "auto" }}>
                     {JSON.stringify(block.provenance, null, 2)}
                   </pre>
                 </div>
               )}
+
+              {/* Block Integrity Verification Status Panel */}
+              {blockVerifyResult[block.index] && (
+                <div
+                  style={{
+                    background: blockVerifyResult[block.index].verified ? "rgba(16, 185, 129, 0.12)" : "rgba(244, 63, 94, 0.12)",
+                    border: `1px solid ${blockVerifyResult[block.index].verified ? "#10b981" : "#f43f5e"}`,
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    marginBottom: "12px",
+                    fontSize: "13px"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <strong style={{ color: blockVerifyResult[block.index].verified ? "#34d399" : "#fb7185" }}>
+                      {blockVerifyResult[block.index].message}
+                    </strong>
+                    <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Block #{block.index} Verification
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#cbd5e1" }}>
+                    <div>• Stored Block Hash: <span className="hash-code">{blockVerifyResult[block.index].stored_block_hash}</span></div>
+                    <div>• Recalculated Hash: <span className="hash-code">{blockVerifyResult[block.index].recalculated_block_hash}</span></div>
+                    {block.index > 0 && (
+                      <div>• Previous Hash Linkage: {blockVerifyResult[block.index].previous_hash_valid ? "✅ Valid" : "❌ Broken Link"}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                <button
+                  className="btn-success"
+                  style={{ fontSize: "12px", padding: "6px 14px" }}
+                  onClick={() => handleVerifyBlockIntegrity(block.index)}
+                >
+                  🛡️ Verify Block Integrity
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -364,6 +404,11 @@ function AuditDashboard({ activeUser, apiBase }) {
                     {rec.status?.toUpperCase()}
                   </span>
                   <strong style={{ fontSize: "14px", color: "#fff" }}>{rec.action}</strong>
+                  {rec.query_id && (
+                    <span className="badge badge-purple" style={{ fontSize: "11px" }}>
+                      {rec.query_id}
+                    </span>
+                  )}
                   <span className="badge badge-secondary" style={{ fontSize: "11px" }}>
                     {rec.data_type}
                   </span>
@@ -386,11 +431,19 @@ function AuditDashboard({ activeUser, apiBase }) {
                 </p>
               )}
 
-              <div style={{ background: "#080c14", padding: "10px", borderRadius: "8px" }}>
+              <div style={{ background: "#080c14", padding: "10px", borderRadius: "8px", marginBottom: "10px" }}>
                 <pre style={{ fontSize: "11px", color: "#cbd5e1", margin: 0, overflow: "auto" }}>
                   {JSON.stringify(rec.details, null, 2)}
                 </pre>
               </div>
+
+              {rec.evidence_hash && (
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    Evidence SHA-256 Hash: <span className="hash-code">{rec.evidence_hash}</span>
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>

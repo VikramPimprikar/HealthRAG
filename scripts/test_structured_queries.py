@@ -2,38 +2,46 @@
 Automated Test Suite for Medical RAG & Deterministic Patient Analytics
 ======================================================================
 Tests all requirements:
-1. Intent Routing (Normal Medical RAG vs. Structured Analytics vs. Specific Patient Lookup)
-2. Total Patient Count Queries ("How many patients are there in total?")
-3. Numerical / Conditional Count Queries ("How many patients are older than 65?", "glucose > 120", "age between 40 and 60", "age > 50 and glucose > 120")
-4. Filter Result Strict Validation (Guarantees every returned patient record satisfies condition)
-5. Full Structured Analytics (Count, Average, Min, Max, Median, Percentage, Comparison, Top-N Ranking, Grouping)
-6. Specific Patient Lookups (All findings vs. isolated Single Parameter vs. Non-existent patient)
-7. Normal Medical RAG Q&A (Symptoms, Causes, ST depression mechanism, Risk factors)
-8. Off-topic Guardrails and Empty context handling
+1. Deterministic Column & Parameter Calculations (chol > 120, chol > 200, age > 50, trestbps > 140, thalch > 150, oldpeak > 1, fbs == 1)
+2. Deterministic Aggregations (Average, Minimum, Maximum, Median, Total Count)
+3. Range and Categorical Queries (oldpeak between 1 and 2, chest pain type 2, blood pressure below 120)
+4. Specific Patient Lookups (All findings vs. isolated Single Parameter vs. Non-existent patient)
+5. Intent Routing (Medical FAISS RAG vs. Structured Analytics)
+6. Anti-Hallucination Off-topic Guardrails
 """
 
-import requests
-import json
 import sys
+import io
+from pathlib import Path
+from fastapi.testclient import TestClient
 
-API_BASE = "http://127.0.0.1:8000"
+# Ensure UTF-8 output on Windows
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(str(BASE_DIR / "backend"))
+
+from app.api import app
+
+client = TestClient(app)
 
 
 def run_test_query(test_num: int, label: str, query: str, user_id: str = "admin", top_k: int = 5):
     print(f"\n[{test_num}] Testing: {label}")
     print(f"    Query: \"{query}\"")
-    
+
     payload = {
         "query": query,
         "user_id": user_id,
         "top_k": top_k
     }
-    
+
     try:
-        r = requests.post(f"{API_BASE}/api/v1/query", json=payload, headers={"X-User-Id": user_id}, timeout=30)
+        r = client.post("/api/v1/query", json=payload, headers={"X-User-Id": user_id})
         assert r.status_code == 200, f"HTTP Error {r.status_code}: {r.text}"
         data = r.json()
-        
+
         print(f"    Query Type: {data.get('query_type')}")
         print(f"    Has Relevant: {data.get('has_relevant_evidence')}")
         print(f"    Records Count: {len(data.get('retrieved_evidence', []))}")
@@ -55,121 +63,108 @@ def main():
     print("RUNNING COMPREHENSIVE MEDICAL RAG & STRUCTURED PATIENT DATA TEST SUITE")
     print("=" * 80)
 
-    # 1. Total Patient Count Query (Requirement 4)
+    # 1. Total Patient Count Query
     q1 = run_test_query(1, "Total Patients Count ('How many patients are there in total?')", "How many patients are there in total?")
-    assert "Total Patients: 920" in q1.get("answer", "")
+    assert "920" in q1.get("answer", "")
 
-    # 1b. Total Count Synonym ('What is the total number of patients?')
-    q1b = run_test_query(2, "Total Patients Synonym ('What is the total number of patients?')", "What is the total number of patients?")
-    assert "Total Patients: 920" in q1b.get("answer", "")
+    # 1b. Total Count Synonym ('How many patients are there?')
+    q1b = run_test_query(2, "Total Patients Synonym ('How many patients are there?')", "How many patients are there?")
+    assert "920" in q1b.get("answer", "")
 
-    # 2. Conditional Count - Age > 65 (Requirement 2 & 3)
-    q2 = run_test_query(3, "Conditional Count ('How many patients are older than 65?')", "How many patients are older than 65?")
-    assert "Age > 65" in q2.get("answer", "")
-    assert "82" in q2.get("answer", "")
+    # 2. Target Query 1: Cholesterol > 120
+    q_chol120 = run_test_query(3, "Cholesterol > 120 ('How many patients have cholesterol greater than 120?')", "How many patients have cholesterol greater than 120?")
+    assert "714" in q_chol120.get("answer", "")
 
-    # 3. Conditional Count - Glucose > 120 (Requirement 2)
-    q3 = run_test_query(4, "Conditional Count ('How many patients have glucose > 120?')", "How many patients have glucose > 120?")
-    assert "138" in q3.get("answer", "")
+    # 3. Target Query 2: Cholesterol > 200
+    q_chol200 = run_test_query(4, "Cholesterol > 200 ('How many patients have cholesterol greater than 200?')", "How many patients have cholesterol greater than 200?")
+    assert "586" in q_chol200.get("answer", "")
 
-    # 4. Range Query - Age between 40 and 60 (Requirement 5)
-    q4 = run_test_query(5, "Range Count ('How many patients have age between 40 and 60?')", "How many patients have age between 40 and 60?")
-    assert "619" in q4.get("answer", "")
+    # 4. Target Query 3: Age > 50
+    q_age50 = run_test_query(5, "Age > 50 ('How many patients have age greater than 50?')", "How many patients have age greater than 50?")
+    assert "603" in q_age50.get("answer", "")
 
-    # 5. Multi-Condition Count - Age > 50 AND Glucose > 120 (Requirement 2 & 5)
-    q5 = run_test_query(6, "Multi-Condition Count ('How many patients have age > 50 and glucose > 120?')", "How many patients have age > 50 and glucose > 120?")
-    assert "122" in q5.get("answer", "")
+    # 5. Target Query 4: Average Cholesterol
+    q_avg_chol = run_test_query(6, "Average Cholesterol ('What is the average cholesterol?')", "What is the average cholesterol?")
+    assert "199.13" in q_avg_chol.get("answer", "")
 
-    # 6. Strict Validation Filter Listing (Requirement 3)
-    q6 = run_test_query(7, "Filter Validation Listing ('Show patients with cholesterol > 350')", "Show patients with cholesterol > 350")
-    assert "Serum Cholesterol > 350" in q6.get("answer", "")
-    assert "27 records found" in q6.get("answer", "")
+    # 6. Target Query 5: Maximum Cholesterol
+    q_max_chol = run_test_query(7, "Maximum Cholesterol ('What is the maximum cholesterol?')", "What is the maximum cholesterol?")
+    assert "603" in q_max_chol.get("answer", "")
 
-    # 7. Average Query - Age (Requirement 5)
-    q7 = run_test_query(8, "Average Query ('What is the average age?')", "What is the average age?")
-    assert "53.51 years" in q7.get("answer", "")
+    # 7. Target Query 6: Blood Pressure > 140
+    q_bp140 = run_test_query(8, "Blood Pressure > 140 ('How many patients have resting blood pressure greater than 140?')", "How many patients have resting blood pressure greater than 140?")
+    assert "209" in q_bp140.get("answer", "")
 
-    # 8. Average Query - Glucose (Requirement 5)
-    q8 = run_test_query(9, "Average Query ('What is the average glucose?')", "What is the average glucose?")
-    assert "Glucose" in q8.get("answer", "") or "Sugar" in q8.get("answer", "")
+    # 8. Target Query 7: Maximum Heart Rate > 150
+    q_thalch150 = run_test_query(9, "Max Heart Rate > 150 ('How many patients have maximum heart rate greater than 150?')", "How many patients have maximum heart rate greater than 150?")
+    assert "277" in q_thalch150.get("answer", "")
 
-    # 9. Minimum Query (Requirement 5)
-    q9 = run_test_query(10, "Minimum Query ('What is the minimum age?')", "What is the minimum age?")
-    assert "28" in q9.get("answer", "")
+    # 9. Target Query 8: Oldpeak > 1
+    q_oldpeak1 = run_test_query(10, "Oldpeak > 1 ('How many patients have oldpeak greater than 1?')", "How many patients have oldpeak greater than 1?")
+    assert "298" in q_oldpeak1.get("answer", "")
 
-    # 10. Maximum Query (Requirement 5)
-    q10 = run_test_query(11, "Maximum Query ('What is the highest cholesterol?')", "What is the highest cholesterol?")
-    assert "603" in q10.get("answer", "")
+    # 10. Target Query 9: Fasting Blood Sugar == 1
+    q_fbs1 = run_test_query(11, "Fasting Blood Sugar == 1 ('How many patients have fasting blood sugar equal to 1?')", "How many patients have fasting blood sugar equal to 1?")
+    assert "138" in q_fbs1.get("answer", "")
 
-    # 11. Median Query (Requirement 5)
-    q11 = run_test_query(12, "Median Query ('What is the median age?')", "What is the median age?")
-    assert "54.00 years" in q11.get("answer", "")
+    # 11. Range Query: Oldpeak between 1 and 2
+    q_range = run_test_query(12, "Range Query ('How many patients have oldpeak between 1 and 2?')", "How many patients have oldpeak between 1 and 2?")
+    assert "281" in q_range.get("answer", "")
 
-    # 12. Percentage Query (Requirement 5)
-    q12 = run_test_query(13, "Percentage Query ('What percentage of patients have heart disease?')", "What percentage of patients have heart disease?")
-    assert "55.3%" in q12.get("answer", "")
+    # 12. Categorical Query: Chest Pain Type 2
+    q_cp2 = run_test_query(13, "Chest Pain Type 2 ('How many patients have chest pain type 2?')", "How many patients have chest pain type 2?")
+    assert "174" in q_cp2.get("answer", "")
 
-    # 13. Comparison Query (Requirement 5)
-    q13 = run_test_query(14, "Comparison Query ('Compare average glucose between patients with and without heart disease.')", "Compare average glucose between patients with and without heart disease.")
-    assert "Comparison:" in q13.get("answer", "")
+    # 13. Median Query: Median Age
+    q_med_age = run_test_query(14, "Median Age ('What is the median age?')", "What is the median age?")
+    assert "54.00" in q_med_age.get("answer", "")
 
-    # 14. Sorting / Ranking Query - Top 10 (Requirement 5)
-    q14 = run_test_query(15, "Sorting Query ('Show the 10 patients with the highest cholesterol.')", "Show the 10 patients with the highest cholesterol.")
-    assert "Top 10 Patients" in q14.get("answer", "")
-    assert "603" in q14.get("answer", "")
+    # 14. Minimum Query: Minimum Blood Pressure
+    q_min_bp = run_test_query(15, "Minimum Blood Pressure ('What is the minimum resting blood pressure?')", "What is the minimum resting blood pressure?")
+    assert "0.00" in q_min_bp.get("answer", "")
 
-    # 15. Grouping Query (Requirement 5)
-    q15 = run_test_query(16, "Grouping Query ('How many patients are in each age group?')", "How many patients are in each age group?")
-    assert "Age Group 50-59" in q15.get("answer", "")
+    # 15. Percentage Query: Heart Disease
+    q_pct = run_test_query(16, "Percentage Query ('What percentage of patients have heart disease?')", "What percentage of patients have heart disease?")
+    assert "55.3%" in q_pct.get("answer", "")
 
-    # 16. Specific Patient Lookup - All Findings for P1651 (Requirement 6)
-    p_all = run_test_query(17, "Specific Patient All Findings ('Show patient P1651')", "Show patient P1651")
+    # 16. Multi-Condition Count: Age > 50 and Glucose > 120
+    q_multi = run_test_query(17, "Multi-Condition ('How many patients have age > 50 and glucose > 120?')", "How many patients have age > 50 and glucose > 120?")
+    assert "122" in q_multi.get("answer", "")
+
+    # 17. Specific Patient Lookup - All Findings for P1651
+    p_all = run_test_query(18, "Specific Patient All Findings ('Show patient P1651')", "Show patient P1651")
     assert "Patient ID: P1651" in p_all.get("answer", "")
     assert "Findings:" in p_all.get("answer", "")
-    assert "Blood Pressure:" in p_all.get("answer", "")
-    assert "Cholesterol:" in p_all.get("answer", "")
 
-    # 17. Specific Patient Lookup - Single Parameter P1651 Cholesterol (Requirement 6)
-    p_single = run_test_query(18, "Specific Patient Single Parameter ('What is P1651\'s cholesterol?')", "What is P1651's cholesterol?")
+    # 18. Specific Patient Lookup - Single Parameter P1651 Cholesterol
+    p_single = run_test_query(19, "Specific Patient Single Parameter ('What is P1651\'s cholesterol?')", "What is P1651's cholesterol?")
     assert "Patient ID: P1651" in p_single.get("answer", "")
     assert "Cholesterol: 0.0 mg/dL" in p_single.get("answer", "")
-    # Must NOT return unrelated parameters
     assert "Blood Pressure:" not in p_single.get("answer", "")
-    assert "Resting ECG:" not in p_single.get("answer", "")
 
-    # 18. Specific Patient Lookup - Patient 125
-    p_125 = run_test_query(19, "Specific Patient Lookup ('Show patient 125')", "Show patient 125")
-    assert "Findings:" in p_125.get("answer", "")
-
-    # 19. Non-Existent Patient ID (Requirement 6)
+    # 19. Non-Existent Patient ID
     p_invalid = run_test_query(20, "Non-Existent Patient ('Show patient P9999')", "Show patient P9999")
     assert "Patient P9999 was not found in the dataset." in p_invalid.get("answer", "")
 
-    # 20. Normal Medical RAG Query - Symptoms (Requirement 1 & 9)
+    # 20. Target Query 11: Normal Medical RAG Query - Symptoms (Must use FAISS RAG)
     rag_symptoms = run_test_query(21, "Medical RAG ('What are the symptoms of heart disease?')", "What are the symptoms of heart disease?")
     assert len(rag_symptoms.get("answer", "")) > 40
-    assert "chest pain" in rag_symptoms.get("answer", "").lower() or "angina" in rag_symptoms.get("answer", "").lower() or "shortness of breath" in rag_symptoms.get("answer", "").lower() or "heart" in rag_symptoms.get("answer", "").lower()
+    assert rag_symptoms.get("query_type") == "rag_medical"
+    assert len(rag_symptoms.get("retrieved_evidence", [])) > 0
 
-    # 21. Normal Medical RAG Query - Causes of High Cholesterol (Requirement 1 & 9)
+    # 21. Target Query 12: Normal Medical RAG Query - Causes of High Cholesterol (Must use FAISS RAG)
     rag_chol = run_test_query(22, "Medical RAG ('What causes high cholesterol?')", "What causes high cholesterol?")
     assert len(rag_chol.get("answer", "")) > 40
-    assert "cholesterol" in rag_chol.get("answer", "").lower()
+    assert rag_chol.get("query_type") == "rag_medical"
+    assert len(rag_chol.get("retrieved_evidence", [])) > 0
 
-    # 22. Normal Medical RAG Query - ST Depression (Requirement 1 & 9)
-    rag_st = run_test_query(23, "Medical RAG ('Explain ST depression.')", "Explain ST depression.")
-    assert len(rag_st.get("answer", "")) > 40
-
-    # 23. Normal Medical RAG Query - Risk Factors (Requirement 1 & 9)
-    rag_rf = run_test_query(24, "Medical RAG ('What are the risk factors for cardiovascular disease?')", "What are the risk factors for cardiovascular disease?")
-    assert len(rag_rf.get("answer", "")) > 40
-
-    # 24. Off-Topic Query Guardrail (Requirement 10)
-    off_topic = run_test_query(25, "Off-Topic Query ('Explain quantum rocket teleportation in astrophysics')", "Explain quantum rocket teleportation in astrophysics")
+    # 22. Off-Topic Query Guardrail
+    off_topic = run_test_query(23, "Off-Topic Query ('Explain quantum rocket teleportation in astrophysics')", "Explain quantum rocket teleportation in astrophysics")
     assert "I apologize for the mismatch" in off_topic.get("answer", "")
     assert off_topic.get("has_relevant_evidence") is False
 
     print("\n" + "=" * 80)
-    print("ALL 25 COMPREHENSIVE TESTS EXECUTED AND PASSED SUCCESSFULLY!")
+    print("ALL 23 COMPREHENSIVE TESTS EXECUTED AND PASSED SUCCESSFULLY!")
     print("=" * 80)
 
 

@@ -5,12 +5,12 @@ Provides deterministic, programmatic query execution over the structured
 cardiovascular patient dataset (920 records in heart_disease.csv).
 
 Features:
-1. Exact Intent Detection (Separating Structured Analytics, Specific Patient Lookups, and Medical RAG)
-2. Total Patient Count Queries ("How many patients are there in total?")
-3. Numerical & Condition Filtering with 100% Programmatic Accuracy
-4. Strict Filter Record Validation (Every displayed record is validated against requested condition)
-5. Analytics: Counts, Conditional Counts, Multi-Conditions, Averages, Medians, Min/Max, Percentages, Comparisons, Top-N Sorting, Grouping
-6. Specific Patient Lookups: Exact ID matching, Single-Parameter isolation, All Findings, Non-existent patient handling (zero hallucination)
+1. Dynamic Schema Discovery & Column Synonym Mapping (All 16 dataset parameters)
+2. Comprehensive Natural-Language Comparison Operators (>, >=, <, <=, =, between, categorical)
+3. Deterministic Aggregations (Count, Average/Mean, Min, Max, Median, Sum, Percentage, Top-N Ranking, Comparison, Grouping)
+4. Specific Patient Lookups (Exact ID matching, Single-Parameter isolation, All Findings, Non-existent handling)
+5. Informative Error Handling with Debug Metadata Output
+6. Strict Medical RAG Separation (Zero interference with general cardiology Q&A)
 
 Author: RAGChainMed
 """
@@ -19,7 +19,7 @@ import os
 import re
 import json
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Union
 import pandas as pd
 import numpy as np
 from groq import Groq
@@ -36,6 +36,7 @@ if not CSV_PATH.exists():
 class StructuredPatientDataEngine:
     """
     High-precision deterministic query engine for structured patient records.
+    Dynamically maps all dataset columns, evaluates comparison filters, multi-conditions, and aggregations.
     """
 
     def __init__(self, csv_path: Optional[Path] = None):
@@ -46,53 +47,86 @@ class StructuredPatientDataEngine:
         groq_key = os.getenv("GROQ_API_KEY")
         self.groq_client = Groq(api_key=groq_key) if groq_key else None
 
-        # Build column synonyms mapping
-        self.column_synonyms = {
-            "age": ["age", "years old", "patient age", "aged", "years of age"],
-            "sex": ["sex", "gender", "male", "female", "men", "women"],
-            "cp": [
-                "chest pain", "chest pain type", "cp", "angina type", "chest discomfort",
-                "typical angina", "atypical angina", "non-anginal", "asymptomatic"
-            ],
-            "trestbps": [
-                "blood pressure", "resting blood pressure", "bp", "trestbps",
-                "systolic bp", "resting bp", "systolic blood pressure", "hypertension", "systolic"
-            ],
-            "chol": [
-                "cholesterol", "serum cholesterol", "chol", "cholesterol level",
-                "hypercholesterolemia", "lipid", "total cholesterol"
-            ],
-            "fbs": [
-                "fasting blood sugar", "blood sugar", "glucose", "sugar",
-                "glucose level", "fbs", "sugar level", "diabetic", "diabetes"
-            ],
-            "restecg": [
-                "resting ecg", "rest ecg", "ecg", "ekg", "electrocardiogram",
-                "electrocardiographic", "restecg"
-            ],
-            "thalch": [
-                "maximum heart rate", "heart rate", "max heart rate", "max hr",
-                "thalch", "thalach", "bpm", "peak heart rate", "pulse"
-            ],
+        # Build comprehensive column synonyms mapping for ALL 16 dataset columns
+        self.column_synonyms: Dict[str, List[str]] = {
             "exang": [
-                "exercise induced angina", "exercise angina", "exang",
-                "angina on exercise", "induced angina"
+                "exercise induced angina", "exercise-induced angina", "angina on exercise",
+                "angina during exercise", "exercise angina", "induced angina", "angina with exercise", "exang"
             ],
             "oldpeak": [
-                "st depression", "oldpeak", "st-segment depression",
-                "st depression value", "exercise st depression", "st segment"
+                "st-segment depression", "st depression value", "exercise st depression",
+                "st depression", "st-depression", "st segment", "oldpeak"
             ],
-            "slope": ["slope", "st slope", "slope value", "st segment slope"],
-            "ca": ["major vessels", "vessels", "ca", "fluoroscopy", "vessels colored", "major vessel"],
-            "thal": ["thal", "thallium", "thallium stress test", "thallium stress", "defect"],
+            "thalch": [
+                "maximum heart rate achieved", "maximum heart rate", "max heart rate",
+                "peak heart rate", "heart rate", "max hr", "thalach", "thalch", "max pulse", "pulse", "bpm"
+            ],
+            "trestbps": [
+                "resting blood pressure", "systolic blood pressure", "blood pressure",
+                "resting bp", "systolic bp", "trestbps", "hypertension", "systolic", "bp"
+            ],
+            "chol": [
+                "serum cholesterol", "cholesterol level", "total cholesterol",
+                "hypercholesterolemia", "serum chol", "cholesterol", "chol", "lipid", "lipids"
+            ],
+            "fbs": [
+                "fasting blood sugar", "blood sugar level", "fasting sugar", "fasting glucose",
+                "blood sugar", "glucose level", "glucose", "sugar level", "sugar",
+                "diabetic", "diabetes", "fbs"
+            ],
+            "restecg": [
+                "resting electrocardiographic", "resting ecg", "resting ekg",
+                "electrocardiogram", "electrocardiographic", "rest ecg result", "rest ecg", "rest ekg",
+                "abnormal ecg", "abnormal ekg", "normal ecg", "normal ekg",
+                "lv hypertrophy", "st-t abnormality", "ecg result", "ekg result",
+                "restecg", "ecg", "ekg"
+            ],
+            "cp": [
+                "chest pain type", "chest pain", "angina type", "chest discomfort",
+                "pain type", "typical angina", "atypical angina", "non-anginal pain", "non-anginal",
+                "asymptomatic", "cp"
+            ],
+            "age": [
+                "patient age", "years of age", "years old", "older than", "younger than", "aged", "age", "years"
+            ],
+            "sex": [
+                "gender", "sex", "males", "females", "male", "female", "men", "women"
+            ],
+            "slope": [
+                "st segment slope", "peak exercise st segment", "st slope", "slope value",
+                "upsloping", "downsloping", "slope", "flat"
+            ],
+            "ca": [
+                "number of major vessels", "major vessels colored", "major vessels",
+                "vessels colored", "major vessel", "number of vessels", "fluoroscopy", "vessels", "ca"
+            ],
+            "thal": [
+                "thallium stress test", "thallium stress", "thallium defect",
+                "thalassemia", "thallium", "reversable defect", "fixed defect", "thal", "defect"
+            ],
             "num": [
-                "heart disease", "cad", "coronary artery disease", "diagnosis",
-                "diagnosis outcome", "disease severity", "heart condition", "num"
+                "coronary artery disease", "heart disease severity", "heart disease diagnosis",
+                "heart disease", "disease severity", "diagnosis outcome", "heart condition",
+                "cad diagnosis", "cad outcome", "diagnosis", "target", "outcome", "num", "cad"
+            ],
+            "dataset": [
+                "dataset origin", "dataset", "location", "hospital", "origin", "center",
+                "cleveland", "hungary", "switzerland", "va long beach"
+            ],
+            "id": [
+                "patient id", "record id", "case id", "patient number", "patient", "id"
             ]
         }
 
+        # Build reverse lookup list sorted by synonym length descending
+        self._sorted_synonym_tuples: List[Tuple[str, str]] = []
+        for col, syns in self.column_synonyms.items():
+            for syn in sorted(syns, key=lambda s: len(s), reverse=True):
+                self._sorted_synonym_tuples.append((syn.lower(), col))
+        self._sorted_synonym_tuples.sort(key=lambda t: len(t[0]), reverse=True)
+
     def _load_and_preprocess_dataset(self) -> pd.DataFrame:
-        """Load and normalize heart_disease.csv"""
+        """Load and normalize heart_disease.csv with all 16 clinical parameters."""
         if not self.csv_path.exists():
             print(f"Warning: Patient CSV not found at {self.csv_path}")
             return pd.DataFrame()
@@ -136,24 +170,31 @@ class StructuredPatientDataEngine:
         return df
 
     def match_column(self, term: str) -> Optional[str]:
-        """Match natural language term to dataset column name"""
+        """
+        Match a natural-language term or phrase to a canonical dataset column name.
+        Uses greedy longest-synonym matching.
+        """
         t = term.lower().strip()
         # Direct exact match
         if t in self.column_synonyms:
             return t
-        
-        # Word boundary / synonym match
-        for col, synonyms in self.column_synonyms.items():
-            for syn in synonyms:
-                if syn == t or f" {syn} " in f" {t} " or t == syn:
-                    return col
+
+        for syn, col in self._sorted_synonym_tuples:
+            if syn == t:
+                return col
+            # Word-bounded substring match
+            pattern = r"(?:\b|^)" + re.escape(syn) + r"(?:\b|$)"
+            if re.search(pattern, t):
+                return col
+
         return None
 
     def get_column_display_name(self, col: str) -> str:
-        """Get user-friendly display name for column"""
+        """Get user-friendly display name for column."""
         display_names = {
             "age": "Age",
-            "sex": "Sex",
+            "sex": "Sex / Gender",
+            "dataset": "Dataset Center",
             "cp": "Chest Pain Type",
             "trestbps": "Resting Blood Pressure",
             "chol": "Serum Cholesterol",
@@ -165,12 +206,13 @@ class StructuredPatientDataEngine:
             "slope": "ST Slope",
             "ca": "Major Vessels (ca)",
             "thal": "Thallium Stress Test",
-            "num": "Heart Disease Diagnosis"
+            "num": "Heart Disease Diagnosis",
+            "id": "Patient ID"
         }
         return display_names.get(col, col.replace("_", " ").title())
 
     def get_column_unit(self, col: str) -> str:
-        """Get measurement unit for column"""
+        """Get measurement unit for column."""
         units = {
             "age": "years",
             "trestbps": "mmHg",
@@ -182,35 +224,61 @@ class StructuredPatientDataEngine:
         return units.get(col, "")
 
     # ============================================================
-    # 1. INTENT DETECTION
+    # 1. INTENT DETECTION & SEPARATION
     # ============================================================
+
+    def is_general_medical_rag_query(self, query: str) -> bool:
+        """
+        Identify whether a query is asking for general clinical knowledge
+        (e.g., 'What are the symptoms of heart disease?', 'What causes high cholesterol?',
+        'Explain ST depression', 'What is angina?', 'Why is high cholesterol a risk factor?')
+        which must be routed to FAISS RAG, not dataset analytics.
+        """
+        q = query.lower().strip()
+
+        # Indicators of general medical concept explanations
+        general_indicators = [
+            "symptom", "symptoms", "cause", "causes", "what causes", "what is the cause",
+            "explain", "mechanism", "pathophysiology", "risk factor", "risk factors",
+            "how to treat", "treatment options", "guidelines", "prevention", "what does",
+            "definition of", "how does", "what is st depression", "what is angina",
+            "what is cardiovascular", "what is coronary", "why is"
+        ]
+
+        # Dataset analytical intent indicators
+        dataset_indicators = [
+            "how many", "count of", "number of patients", "percentage of", "average",
+            "mean", "median", "maximum", "minimum", "highest", "lowest", "total patients",
+            "compare", "patient p", "patient #", "show patient", "top 10", "top 5",
+            "which patients", "who are the patients", "list patients"
+        ]
+
+        has_general = any(ind in q for ind in general_indicators)
+        has_dataset = any(ind in q for ind in dataset_indicators)
+
+        # If query asks for symptoms, causes, or medical explanations and NOT dataset counts/aggregations
+        if has_general and not has_dataset:
+            return True
+
+        return False
 
     def detect_specific_patient_intent(self, query: str) -> Optional[Dict[str, Any]]:
         """
-        Check if query is asking for a specific patient record or parameter.
-        Examples:
-        - "Show patient P1651"
-        - "What are the findings for patient P1651?"
-        - "What is P1651's cholesterol?"
-        - "Give me all parameters for patient P1651."
-        - "Show patient 125"
-        - "What is patient 125's resting blood pressure?"
+        Check if query is asking for a specific individual patient record or parameter.
+        Examples: 'Show patient P1651', 'What is P1651's cholesterol?', 'What is P1651's blood pressure?'
         """
         q = query.strip()
         q_lower = q.lower()
 
-        # Check if the query is a cohort aggregation query (should NOT be treated as a single patient lookup)
-        cohort_keywords = ["how many", "count of", "number of patients", "percentage of", "average age", "median age", "compare"]
+        # Cohort aggregation queries should NOT be treated as a single patient lookup
+        cohort_keywords = ["how many", "count of", "number of patients", "percentage of", "average age", "median age", "compare", "which patients"]
         if any(w in q_lower for w in cohort_keywords):
-            # Unless explicitly anchored to a single patient
             if not any(w in q_lower for w in ["for patient", "of patient", "patient's"]):
                 return None
 
-        # Look for explicit Patient ID patterns (e.g. "P1651", "P1005", "P125", "patient 125", "patient P1651")
-        # 1. Direct P-ID (P followed by digits)
+        # Look for explicit Patient ID patterns (e.g. "P1651", "P1005", "P125", "patient 125")
         pid_match = re.search(r"\b(p\d{1,5})\b", q_lower)
         if not pid_match:
-            # 2. "patient 125", "patient #125", "patient's 125"
             pid_match = re.search(r"\bpatient(?:'s)?\s*(?:id|#)?\s*(\d{1,5})\b", q_lower)
 
         if not pid_match:
@@ -220,26 +288,18 @@ class StructuredPatientDataEngine:
 
         # Check if asking for a specific single parameter
         specific_param = None
-        # Specific keywords checks
-        if any(w in q_lower for w in ["cholesterol", "chol"]):
-            specific_param = "chol"
-        elif any(w in q_lower for w in ["blood pressure", "bp", "trestbps", "systolic"]):
-            specific_param = "trestbps"
-        elif any(w in q_lower for w in ["heart rate", "max hr", "thalch", "thalach", "bpm", "pulse"]):
-            specific_param = "thalch"
-        elif any(w in q_lower for w in ["blood sugar", "glucose", "fbs"]):
-            specific_param = "fbs"
-        elif any(w in q_lower for w in ["st depression", "oldpeak"]):
-            specific_param = "oldpeak"
-        elif any(w in q_lower for w in ["age", "how old"]):
-            if "average age" not in q_lower:
-                specific_param = "age"
-        elif any(w in q_lower for w in ["chest pain", "angina type"]):
-            specific_param = "cp"
-        elif any(w in q_lower for w in ["ecg", "ekg", "electrocardiogram"]):
-            specific_param = "restecg"
-        elif any(w in q_lower for w in ["diagnosis", "disease status"]):
-            specific_param = "num"
+        # Check specific parameters in strict priority order (exang before cp, oldpeak before restecg)
+        param_candidates = [
+            "exang", "oldpeak", "thalch", "chol", "trestbps", "fbs",
+            "restecg", "cp", "slope", "ca", "thal", "num", "age", "sex"
+        ]
+        for col in param_candidates:
+            syns = self.column_synonyms.get(col, [])
+            if any(syn in q_lower for syn in syns):
+                if col == "age" and ("average age" in q_lower or "median age" in q_lower):
+                    continue
+                specific_param = col
+                break
 
         # Check if the query asks for all parameters or findings
         if any(w in q_lower for w in ["all findings", "all parameters", "findings", "details", "parameters", "show patient", "profile", "record", "give me"]):
@@ -258,53 +318,63 @@ class StructuredPatientDataEngine:
         """
         q = query.lower().strip()
 
-        # 1. Specific Patient Check
+        # 1. Guardrail against general medical knowledge queries
+        if self.is_general_medical_rag_query(query):
+            return None
+
+        # 2. Specific Patient Check
         if self.detect_specific_patient_intent(query):
             return "SPECIFIC_PATIENT_LOOKUP"
 
-        # 2. Total Count Queries
-        if re.search(r"\b(how many patients are there in total|total number of patients|how many patients are in the dataset|how many patient records|total patient count|total patients|count of all patients|how many total patients)\b", q):
+        # 3. Total Count Queries
+        if re.search(r"\b(how many patients are there in total|total number of patients|how many patients are in the dataset|how many patient records|total patient count|total patients|count of all patients|how many total patients|how many patients are there|how many patients exist)\b", q):
             return "STRUCTURED_TOTAL_COUNT"
 
-        # 3. Sorting / Ranking (Top N / Bottom N) - Check before min/max so "top 10 patients with highest..." routes to ranking
+        # 4. Sorting / Ranking (Top N / Bottom N)
         if re.search(r"\b(top \d+|show \d+|show the \d+|give me \d+|first \d+|\d+ patients with the (?:highest|lowest|max|min))\b", q):
             return "STRUCTURED_RANKING"
 
-        # 4. Percentage Queries
+        # 5. Percentage Queries
         if re.search(r"\b(what percentage|percentage of|% of|percent of)\b", q):
             return "STRUCTURED_PERCENTAGE"
 
-        # 5. Comparison Queries
-        if re.search(r"\b(compare|comparison|difference between|higher .* than|higher .* between|compare average|compare glucose|compare cholesterol)\b", q):
+        # 6. Comparison Queries between Cohorts
+        if re.search(r"\b(compare|comparison|difference between|higher .* than|higher .* between)\b", q):
             return "STRUCTURED_COMPARISON"
 
-        # 6. Median Queries
-        if re.search(r"\b(median)\b", q):
-            return "STRUCTURED_MEDIAN"
-
-        # 7. Min / Max Queries
-        if re.search(r"\b(highest|maximum|max|lowest|minimum|min)\b", q):
-            return "STRUCTURED_MIN_MAX"
-
-        # 8. Average / Mean Queries
+        # 7. Average / Mean Queries ("What is the average cholesterol?", "What is the average age?", "What is the average maximum heart rate?")
         if re.search(r"\b(average|mean|avg)\b", q):
             return "STRUCTURED_AVERAGE"
 
-        # 9. Grouping / Distribution Queries
-        if re.search(r"\b(for each|in each|grouped by|distribution of|breakdown by|each age group|each category|each heart disease)\b", q):
-            return "STRUCTURED_GROUPING"
+        # 8. Median Queries
+        if re.search(r"\b(median)\b", q):
+            return "STRUCTURED_MEDIAN"
 
-        # 10. Conditional Count Queries
-        if re.search(r"\b(how many patients|count of patients|number of patients|how many records)\b", q) or (
-            "how many" in q and any(w in q for w in ["patient", "patients", "cases", "people"])
+        # 9. List / Filter Queries ("Which patients have...", "List patients with...", "Show patients with...")
+        if re.search(r"\b(which patients|who are the patients|list patients|find patients|show patients|patients who have|patients with|patients having|patients where)\b", q):
+            return "STRUCTURED_FILTER"
+
+        # 10. Conditional Count Queries ("How many patients have...", "How many patients are older than...", "How many males have...")
+        if re.search(r"\b(how many patients|count of patients|number of patients|how many records|how many people|how many cases|how many males|how many females|how many men|how many women)\b", q) or (
+            "how many" in q and any(w in q for w in ["patient", "patients", "cases", "people", "records", "males", "females", "men", "women", "asymptomatic", "typical", "atypical"])
         ):
             return "STRUCTURED_COUNT"
 
-        # 11. Filter Listings (e.g. "show patients with...", "patients older than...")
-        if re.search(r"\b(show patients|find patients|list patients|patients with|patients where|patients older than|patients younger than)\b", q):
-            # Only if it contains comparison operators or condition keywords
-            if any(sym in q for sym in [">", "<", ">=", "<=", "=", "between", "above", "below", "older", "younger", "high", "elevated"]):
-                return "STRUCTURED_FILTER"
+        # 11. Min / Max Queries (Asking explicitly for minimum or maximum value of a parameter)
+        if re.search(r"\b(what is the highest|what is the maximum|what is the max|what is the lowest|what is the minimum|what is the min|highest .* in the dataset|maximum .* in the dataset|lowest .* in the dataset|minimum .* in the dataset)\b", q):
+            return "STRUCTURED_MIN_MAX"
+
+        # 12. Sum Queries
+        if re.search(r"\b(sum of|total sum|sum)\b", q) and any(w in q for w in ["patient", "cholesterol", "age", "pressure", "records"]):
+            return "STRUCTURED_SUM"
+
+        # 13. Grouping / Distribution Queries
+        if re.search(r"\b(for each|in each|grouped by|distribution of|breakdown by|each age group|each category|each heart disease)\b", q):
+            return "STRUCTURED_GROUPING"
+
+        # 14. Fallback for comparison symbols without "how many"
+        if any(sym in q for sym in [">", "<", ">=", "<=", "=", "between", "above", "below", "older than", "younger than"]):
+            return "STRUCTURED_COUNT"
 
         return None
 
@@ -351,7 +421,6 @@ class StructuredPatientDataEngine:
             }
 
         # Extract details
-        p_id_display = f"{matched_row['patient_id']}"
         age = matched_row["age"]
         sex = matched_row["sex"]
         cp = matched_row["cp"]
@@ -380,28 +449,50 @@ class StructuredPatientDataEngine:
         fbs_display = "Elevated (>120 mg/dL)" if fbs in [True, "TRUE", "True", 1, 1.0] else "Normal (<=120 mg/dL)"
         exang_display = "Yes (Present)" if exang in [True, "TRUE", "True", 1, 1.0] else "No (Absent)"
 
-        # -------------------------------------------------------------
-        # Case A: Single Parameter Requested (Requirement 6)
-        # -------------------------------------------------------------
+        # Case A: Single Parameter Requested
         if requested_param:
             param_col = self.match_column(requested_param) or requested_param
-            if param_col in self.df.columns or param_col in ["fbs", "exang", "num"]:
+            if param_col in self.df.columns or param_col in ["fbs", "exang", "num", "has_heart_disease"]:
                 val = matched_row.get(param_col)
                 unit = self.get_column_unit(param_col)
                 display_col = self.get_column_display_name(param_col)
 
                 if param_col == "fbs":
                     val_str = fbs_display
+                    sentence_ans = f"Patient {patient_id_query} has a fasting blood sugar level of {val_str}."
                 elif param_col == "exang":
                     val_str = exang_display
-                elif param_col == "num":
+                    sentence_ans = f"Patient {patient_id_query} exercise induced angina: {val_str}."
+                elif param_col in ["num", "has_heart_disease"]:
                     val_str = f"{has_hd} ({diag_str})"
+                    sentence_ans = f"Patient {patient_id_query} diagnosis: {val_str}."
+                elif param_col == "cp":
+                    val_str = str(val).title() if pd.notna(val) else "N/A"
+                    sentence_ans = f"Patient {patient_id_query} has a chest pain type of {val_str}."
+                elif param_col == "restecg":
+                    val_str = str(val).title() if pd.notna(val) else "N/A"
+                    sentence_ans = f"Patient {patient_id_query} has a resting ECG result of {val_str}."
+                elif param_col == "slope":
+                    val_str = str(val).title() if pd.notna(val) else "N/A"
+                    sentence_ans = f"Patient {patient_id_query} has an ST slope of {val_str}."
+                elif param_col == "thal":
+                    val_str = str(val).title() if pd.notna(val) else "N/A"
+                    sentence_ans = f"Patient {patient_id_query} thallium stress test: {val_str}."
+                elif param_col == "ca":
+                    val_str = f"{val} {unit}" if pd.notna(val) else "N/A"
+                    sentence_ans = f"Patient {patient_id_query} has {val_str} colored by fluoroscopy."
                 elif unit:
                     val_str = f"{val} {unit}" if pd.notna(val) else "N/A"
+                    sentence_ans = f"Patient {patient_id_query} has a {display_col.lower()} of {val_str}."
                 else:
                     val_str = f"{val}" if pd.notna(val) else "N/A"
+                    sentence_ans = f"Patient {patient_id_query} {display_col.lower()}: {val_str}."
 
-                answer_text = f"Patient ID: {patient_id_query}\n{display_col}: {val_str}"
+                answer_text = (
+                    f"{sentence_ans}\n\n"
+                    f"Patient ID: {patient_id_query}\n"
+                    f"{display_col}: {val_str}"
+                )
                 return {
                     "success": True,
                     "answer": answer_text,
@@ -413,9 +504,7 @@ class StructuredPatientDataEngine:
                     "value": val_str
                 }
 
-        # -------------------------------------------------------------
         # Case B: All Findings Requested
-        # -------------------------------------------------------------
         answer_text = (
             f"Patient ID: {patient_id_query}\n\n"
             f"Findings:\n"
@@ -445,7 +534,283 @@ class StructuredPatientDataEngine:
         }
 
     # ============================================================
-    # 3. STRUCTURED ANALYTICAL QUERIES EXECUTOR
+    # 3. DYNAMIC OPERATOR & CONDITION PARSER
+    # ============================================================
+
+    def _parse_comparison_clause(self, text: str) -> Optional[Dict[str, Any]]:
+        """
+        Parse a single condition clause into {column, operator, value, is_categorical}.
+        Supports all natural language comparators and categorical column states.
+        """
+        t = text.strip()
+        t_lower = t.lower()
+
+        # 1. Range Check: 'between X and Y' / 'from X to Y'
+        range_match = re.search(r"(\bbetween\b|\bfrom\b)\s*([0-9]+(?:\.[0-9]+)?)\s*(\band\b|\bto\b)\s*([0-9]+(?:\.[0-9]+)?)", t_lower)
+        if range_match:
+            low_val = float(range_match.group(2))
+            high_val = float(range_match.group(4))
+            col = self.match_column(t_lower) or "age"
+            return {
+                "column": col,
+                "operator": "between",
+                "value": (low_val, high_val),
+                "is_categorical": False
+            }
+
+        # 2. Extract Operator and Value with Comprehensive Natural Language Patterns
+        operator_patterns = [
+            (r"\b(?:greater than or equal to|greater than or equal|at least|no less than|minimum of)\b", ">="),
+            (r"\b(?:less than or equal to|less than or equal|at most|no more than|maximum of|up to)\b", "<="),
+            (r"\b(?:greater than|more than|higher than|above|over|exceeding|strictly greater than|older than)\b", ">"),
+            (r"\b(?:less than|fewer than|lower than|below|under|younger than)\b", "<"),
+            (r"\b(?:equal to|equals|equal|exactly|is equal to)\b", "=="),
+            (r">=", ">="),
+            (r"<=", "<="),
+            (r">", ">"),
+            (r"<", "<"),
+            (r"==", "=="),
+            (r"=", "==")
+        ]
+
+        found_op = None
+        op_match_span = None
+
+        for pattern, op_symbol in operator_patterns:
+            m = re.search(pattern, t_lower)
+            if m:
+                found_op = op_symbol
+                op_match_span = m.span()
+                break
+
+        # Check for numeric threshold after/around operator
+        if found_op and op_match_span:
+            text_before = t_lower[:op_match_span[0]]
+            text_after = t_lower[op_match_span[1]:]
+
+            # Try finding number in text_after or text_before
+            num_match = re.search(r"([0-9]+(?:\.[0-9]+)?)", text_after)
+            if not num_match:
+                num_match = re.search(r"([0-9]+(?:\.[0-9]+)?)", t_lower)
+
+            if num_match:
+                val = float(num_match.group(1))
+
+                # Column resolution
+                if "older" in t_lower or "younger" in t_lower or "age" in t_lower:
+                    col = "age"
+                elif "blood pressure" in t_lower or "bp" in t_lower or "trestbps" in t_lower or "hypertension" in t_lower:
+                    col = "trestbps"
+                elif "cholesterol" in t_lower or "chol" in t_lower:
+                    col = "chol"
+                elif "heart rate" in t_lower or "thalach" in t_lower or "thalch" in t_lower or "pulse" in t_lower:
+                    col = "thalch"
+                elif "oldpeak" in t_lower or "st depression" in t_lower:
+                    col = "oldpeak"
+                elif "vessel" in t_lower or "ca" in t_lower:
+                    col = "ca"
+                else:
+                    col = self.match_column(text_before) or self.match_column(t_lower)
+
+                if col:
+                    if col == "fbs":
+                        # Fasting blood sugar in dataset is boolean (> 120 mg/dL indicator)
+                        is_elevated = (found_op in [">", ">="] and val >= 100) or (found_op in ["==", "="] and val in [1, 1.0])
+                        return {
+                            "column": "fbs",
+                            "operator": "==",
+                            "value": is_elevated,
+                            "is_categorical": True
+                        }
+                    elif col == "exang" and val in [0, 1, 0.0, 1.0]:
+                        return {
+                            "column": "exang",
+                            "operator": "==",
+                            "value": bool(int(val)),
+                            "is_categorical": True
+                        }
+                    elif col == "cp" and int(val) in [1, 2, 3, 4]:
+                        cp_map = {1: "typical angina", 2: "atypical angina", 3: "non-anginal", 4: "asymptomatic"}
+                        return {
+                            "column": "cp",
+                            "operator": "==",
+                            "value": cp_map[int(val)],
+                            "is_categorical": True
+                        }
+                    elif col == "num" and found_op in [">", ">="] and val in [0, 0.0]:
+                        return {
+                            "column": "has_heart_disease",
+                            "operator": "==",
+                            "value": True,
+                            "is_categorical": True
+                        }
+                    return {
+                        "column": col,
+                        "operator": found_op,
+                        "value": val,
+                        "is_categorical": False
+                    }
+
+        # 3. Categorical Values Matching
+        # Exercise Induced Angina (Check BEFORE Chest pain so "exercise induced angina" is not captured as CP!)
+        if "exang" in t_lower or "exercise induced angina" in t_lower or "exercise angina" in t_lower or "angina with exercise" in t_lower:
+            if any(w in t_lower for w in ["0", "false", "no", "absent", "without"]):
+                return {"column": "exang", "operator": "==", "value": False, "is_categorical": True}
+            else:
+                return {"column": "exang", "operator": "==", "value": True, "is_categorical": True}
+
+        # Chest Pain Type: e.g. "typical angina", "atypical angina", "non-anginal pain", "asymptomatic"
+        if "typical angina" in t_lower and "atypical" not in t_lower:
+            return {"column": "cp", "operator": "==", "value": "typical angina", "is_categorical": True}
+        elif "atypical angina" in t_lower or "atypical" in t_lower:
+            return {"column": "cp", "operator": "==", "value": "atypical angina", "is_categorical": True}
+        elif "non-anginal" in t_lower or "non anginal" in t_lower:
+            return {"column": "cp", "operator": "==", "value": "non-anginal", "is_categorical": True}
+        elif "asymptomatic" in t_lower:
+            return {"column": "cp", "operator": "==", "value": "asymptomatic", "is_categorical": True}
+
+        if "chest pain" in t_lower or "cp" in t_lower:
+            cp_num = re.search(r"(?:cp|chest pain|type)\s*([1-4])\b", t_lower)
+            if cp_num:
+                cp_map = {"1": "typical angina", "2": "atypical angina", "3": "non-anginal", "4": "asymptomatic"}
+                return {"column": "cp", "operator": "==", "value": cp_map[cp_num.group(1)], "is_categorical": True}
+
+        # Resting ECG: e.g. "abnormal ecg", "normal ecg", "lv hypertrophy", "st-t abnormality"
+        if "ecg" in t_lower or "ekg" in t_lower or "restecg" in t_lower or "electrocardiogram" in t_lower:
+            if "abnormal" in t_lower:
+                return {"column": "restecg", "operator": "==", "value": "abnormal", "is_categorical": True}
+            elif "normal" in t_lower:
+                return {"column": "restecg", "operator": "==", "value": "normal", "is_categorical": True}
+            elif "lv hypertrophy" in t_lower or "hypertrophy" in t_lower:
+                return {"column": "restecg", "operator": "==", "value": "lv hypertrophy", "is_categorical": True}
+            elif "st-t abnormality" in t_lower or "st-t" in t_lower or "wave abnormality" in t_lower:
+                return {"column": "restecg", "operator": "==", "value": "st-t abnormality", "is_categorical": True}
+
+        # Fasting Blood Sugar: e.g. "fasting blood sugar equal to 1", "glucose > 120", "fbs == 1", "fasting blood sugar above 120"
+        if "fbs" in t_lower or "fasting blood sugar" in t_lower or "glucose" in t_lower or "blood sugar" in t_lower or "sugar" in t_lower:
+            if any(w in t_lower for w in ["1", "true", "yes", "elevated", "high", "> 120", ">120", "above 120", "over 120"]):
+                return {"column": "fbs", "operator": "==", "value": True, "is_categorical": True}
+            elif any(w in t_lower for w in ["0", "false", "no", "normal", "<= 120", "<=120", "below 120", "under 120"]):
+                return {"column": "fbs", "operator": "==", "value": False, "is_categorical": True}
+            else:
+                return {"column": "fbs", "operator": "==", "value": True, "is_categorical": True}
+
+        # Sex: e.g. "male", "female", "men", "women", "males", "females"
+        if "sex" in t_lower or "gender" in t_lower or "male" in t_lower or "female" in t_lower or "men" in t_lower or "women" in t_lower:
+            if "female" in t_lower or "women" in t_lower or "females" in t_lower:
+                return {"column": "sex", "operator": "==", "value": "Female", "is_categorical": True}
+            elif "male" in t_lower or "men" in t_lower or "males" in t_lower:
+                return {"column": "sex", "operator": "==", "value": "Male", "is_categorical": True}
+
+        # Heart Disease / CAD: e.g. "heart disease", "cad", "coronary artery disease"
+        if "heart disease" in t_lower or "cad" in t_lower or "coronary artery disease" in t_lower:
+            if any(w in t_lower for w in ["no heart disease", "healthy", "without heart disease", "without cad", "no cad", "num 0", "num = 0", "equal to 0"]):
+                return {"column": "num", "operator": "==", "value": 0, "is_categorical": True}
+            elif any(w in t_lower for w in ["mild", "class 1"]):
+                return {"column": "num", "operator": "==", "value": 1, "is_categorical": True}
+            elif any(w in t_lower for w in ["moderate", "class 2"]):
+                return {"column": "num", "operator": "==", "value": 2, "is_categorical": True}
+            elif any(w in t_lower for w in ["severe", "class 3"]):
+                return {"column": "num", "operator": "==", "value": 3, "is_categorical": True}
+            else:
+                return {"column": "has_heart_disease", "operator": "==", "value": True, "is_categorical": True}
+
+        # ST Slope: e.g. "upsloping", "flat", "downsloping"
+        if "slope" in t_lower or "upsloping" in t_lower or "flat" in t_lower or "downsloping" in t_lower:
+            if "upsloping" in t_lower:
+                return {"column": "slope", "operator": "==", "value": "upsloping", "is_categorical": True}
+            elif "flat" in t_lower:
+                return {"column": "slope", "operator": "==", "value": "flat", "is_categorical": True}
+            elif "downsloping" in t_lower:
+                return {"column": "slope", "operator": "==", "value": "downsloping", "is_categorical": True}
+
+        # Thallium: e.g. "fixed defect", "reversable defect", "normal defect"
+        if "thal" in t_lower or "thallium" in t_lower:
+            if "fixed defect" in t_lower or "fixed" in t_lower:
+                return {"column": "thal", "operator": "==", "value": "fixed defect", "is_categorical": True}
+            elif "reversable" in t_lower or "reversible" in t_lower:
+                return {"column": "thal", "operator": "==", "value": "reversable defect", "is_categorical": True}
+            elif "normal" in t_lower:
+                return {"column": "thal", "operator": "==", "value": "normal", "is_categorical": True}
+
+        return None
+
+    def _apply_filter_clause(self, df_target: pd.DataFrame, clause: Dict[str, Any]) -> Tuple[pd.DataFrame, str]:
+        """Apply a parsed filter clause against the DataFrame and return (filtered_df, description_string)."""
+        col = clause["column"]
+        op = clause["operator"]
+        val = clause["value"]
+        is_cat = clause.get("is_categorical", False)
+
+        disp = self.get_column_display_name(col)
+        unit = self.get_column_unit(col)
+        unit_str = f" {unit}" if unit else ""
+
+        if op == "between" and isinstance(val, tuple):
+            low, high = val
+            mask = (df_target[col] >= low) & (df_target[col] <= high)
+            cond_str = f"{disp} Between {low} and {high}{unit_str}"
+            return df_target[mask], cond_str
+
+        if is_cat:
+            if col == "fbs":
+                mask = df_target["fbs_bool"] == val
+                cond_str = f"Fasting Blood Sugar = {'Elevated (>120 mg/dL)' if val else 'Normal (<=120 mg/dL)'}"
+            elif col == "exang":
+                mask = df_target["exang_bool"] == val
+                cond_str = f"Exercise Induced Angina = {'Present (1)' if val else 'Absent (0)'}"
+            elif col == "has_heart_disease":
+                mask = df_target["has_heart_disease"] == val
+                cond_str = f"Heart Disease Diagnosis = {'Present (CAD > 0)' if val else 'Absent (Healthy)'}"
+            elif col == "cp" and isinstance(val, str):
+                mask = df_target["cp"].astype(str).str.lower().str.contains(val.lower())
+                cond_str = f"Chest Pain Type = {val.title()}"
+            elif col == "restecg" and isinstance(val, str):
+                if val == "abnormal":
+                    mask = df_target["restecg"].astype(str).str.lower().isin(["lv hypertrophy", "st-t abnormality"])
+                    cond_str = f"Resting ECG = Abnormal (LV Hypertrophy or ST-T Abnormality)"
+                else:
+                    mask = df_target["restecg"].astype(str).str.lower() == val.lower()
+                    cond_str = f"Resting ECG = {val.title()}"
+            elif col == "slope" and isinstance(val, str):
+                mask = df_target["slope"].astype(str).str.lower().str.contains(val.lower())
+                cond_str = f"ST Slope = {val.title()}"
+            elif col == "thal" and isinstance(val, str):
+                mask = df_target["thal"].astype(str).str.lower().str.contains(val.lower())
+                cond_str = f"Thallium Stress Test = {val.title()}"
+            elif col == "sex" and isinstance(val, str):
+                mask = df_target["sex"].astype(str).str.lower() == val.lower()
+                cond_str = f"Sex = {val}"
+            elif col == "num":
+                mask = df_target["num"] == val
+                cond_str = f"Diagnosis Category = Class {val}"
+            else:
+                mask = df_target[col] == val
+                cond_str = f"{disp} = {val}"
+            return df_target[mask], cond_str
+
+        # Numerical comparisons
+        val_float = float(val)
+        if op in [">", "above", "over"]:
+            mask = df_target[col] > val_float
+            cond_str = f"{disp} > {val_float}{unit_str}"
+        elif op in [">=", "greater than or equal"]:
+            mask = df_target[col] >= val_float
+            cond_str = f"{disp} >= {val_float}{unit_str}"
+        elif op in ["<", "below", "under"]:
+            mask = df_target[col] < val_float
+            cond_str = f"{disp} < {val_float}{unit_str}"
+        elif op in ["<=", "less than or equal"]:
+            mask = df_target[col] <= val_float
+            cond_str = f"{disp} <= {val_float}{unit_str}"
+        else:
+            mask = df_target[col] == val_float
+            cond_str = f"{disp} = {val_float}{unit_str}"
+
+        return df_target[mask], cond_str
+
+    # ============================================================
+    # 4. STRUCTURED ANALYTICAL QUERIES EXECUTOR
     # ============================================================
 
     def execute_structured_query(self, query: str) -> Dict[str, Any]:
@@ -463,13 +828,15 @@ class StructuredPatientDataEngine:
                 requested_param=patient_intent.get("parameter")
             )
 
-        # 2. Total Patient Count (Requirement 4)
+        # 2. Total Patient Count
         if (
             "total" in q_lower and any(w in q_lower for w in ["patient", "patients", "count", "dataset", "records"])
         ) or re.search(r"how many patients (?:are there )?(?:in total|in the dataset|total)", q_lower) or (
             "how many patient records are there" in q_lower
         ) or (
             "give me the total patient count" in q_lower
+        ) or (
+            q_lower.strip("?. ") in ["how many patients are there", "how many patients", "how many patient records", "total patients"]
         ):
             total = len(self.df)
             males = len(self.df[self.df["sex"] == "Male"])
@@ -477,7 +844,10 @@ class StructuredPatientDataEngine:
             hd_count = len(self.df[self.df["has_heart_disease"] == True])
 
             answer = (
-                f"Total Patients: {total}\n\n"
+                f"Deterministic Dataset Analytics\n\n"
+                f"Query:\n{query}\n\n"
+                f"Operation: TOTAL PATIENT COUNT\n\n"
+                f"Result:\n{total} patients\n\n"
                 f"Dataset Summary:\n"
                 f"• Total Records: {total}\n"
                 f"• Male Patients: {males} ({(males/total)*100:.1f}%)\n"
@@ -490,10 +860,16 @@ class StructuredPatientDataEngine:
                 "retrieved_evidence": [],
                 "has_relevant_evidence": True,
                 "query_type": "structured_total_count",
-                "total": total
+                "total": total,
+                "debug": {
+                    "column": "all",
+                    "operator": "count",
+                    "value": total,
+                    "operation": "total_count"
+                }
             }
 
-        # 3. Top-N Ranking / Sorting (Requirement 5) - Checked before Min/Max
+        # 3. Top-N Ranking / Sorting (e.g. "Show the 10 patients with the highest cholesterol")
         rank_match = re.search(r"(?:top|show|give me|first)\s*(?:the\s*)?(\d+)\s*patients\s*(?:with|by)?\s*(?:the)?\s*(highest|lowest|max|min)?\s*([a-zA-Z\s]+)", q_lower)
         if rank_match:
             n_count = int(rank_match.group(1))
@@ -516,7 +892,11 @@ class StructuredPatientDataEngine:
                     rows.append(f"{rank}. Patient ID {p_id} ({row['patient_id']}): {disp_name} = {val}{unit_str} | Age: {row['age']} | Sex: {row['sex']} | Diagnosis: {diag}")
 
                 answer = (
-                    f"Top {len(subset)} Patients Ranked by {order_word.title()} {disp_name}:\n\n"
+                    f"Deterministic Dataset Analytics\n\n"
+                    f"Query:\n{query}\n\n"
+                    f"Parameter: {disp_name}\n"
+                    f"Operation: RANKING ({order_word.upper()} {n_count})\n\n"
+                    f"Result:\nTop {len(subset)} Patients Ranked by {order_word.title()} {disp_name}:\n\n"
                     + "\n".join(rows)
                 )
                 return {
@@ -524,17 +904,22 @@ class StructuredPatientDataEngine:
                     "answer": answer,
                     "retrieved_evidence": [],
                     "has_relevant_evidence": True,
-                    "query_type": "structured_ranking"
+                    "query_type": "structured_ranking",
+                    "debug": {
+                        "column": col,
+                        "operator": "ranking",
+                        "value": n_count,
+                        "operation": f"top_{n_count}_{order_word}"
+                    }
                 }
 
-        # 4. Comparison Queries (Requirement 5)
+        # 4. Comparison Queries between Cohorts (e.g. "Compare average glucose between patients with and without heart disease")
         if "compare" in q_lower or "difference between" in q_lower or ("higher" in q_lower and "between" in q_lower):
-            # Check parameter
             target_col = None
             if "glucose" in q_lower or "sugar" in q_lower or "fbs" in q_lower:
                 target_col = "fbs"
             else:
-                for col in ["chol", "trestbps", "thalch", "age", "oldpeak"]:
+                for col in ["thalch", "chol", "trestbps", "age", "oldpeak", "ca"]:
                     syns = self.column_synonyms.get(col, [])
                     if any(syn in q_lower for syn in syns):
                         target_col = col
@@ -553,6 +938,10 @@ class StructuredPatientDataEngine:
                 pct_non = (fbs_non_high / fbs_non_total) * 100 if fbs_non_total else 0
 
                 answer = (
+                    f"Deterministic Dataset Analytics\n\n"
+                    f"Query:\n{query}\n\n"
+                    f"Parameter: Fasting Blood Sugar (fbs)\n"
+                    f"Operation: COMPARISON\n\n"
                     f"Comparison: Fasting Blood Sugar / Glucose (>120 mg/dL) Prevalence Between Cohorts\n\n"
                     f"1. Patients WITH Heart Disease (CAD, num > 0):\n"
                     f"   - Evaluated Records: {fbs_hd_total}\n"
@@ -567,7 +956,13 @@ class StructuredPatientDataEngine:
                     "answer": answer,
                     "retrieved_evidence": [],
                     "has_relevant_evidence": True,
-                    "query_type": "structured_comparison"
+                    "query_type": "structured_comparison",
+                    "debug": {
+                        "column": "fbs",
+                        "operator": "compare",
+                        "value": "cohort_diff",
+                        "operation": "comparison"
+                    }
                 }
 
             elif target_col:
@@ -587,6 +982,10 @@ class StructuredPatientDataEngine:
                 diff_str = f"+{diff:.2f}" if diff > 0 else f"{diff:.2f}"
 
                 answer = (
+                    f"Deterministic Dataset Analytics\n\n"
+                    f"Query:\n{query}\n\n"
+                    f"Parameter: {disp_name}\n"
+                    f"Operation: COMPARISON\n\n"
                     f"Comparison: {disp_name} between Patients With vs Without Heart Disease\n\n"
                     f"1. Patients WITH Heart Disease (CAD, num > 0):\n"
                     f"   - Records: {len(hd_group)}\n"
@@ -603,715 +1002,238 @@ class StructuredPatientDataEngine:
                     "answer": answer,
                     "retrieved_evidence": [],
                     "has_relevant_evidence": True,
-                    "query_type": "structured_comparison"
+                    "query_type": "structured_comparison",
+                    "debug": {
+                        "column": target_col,
+                        "operator": "compare",
+                        "value": diff,
+                        "operation": "comparison"
+                    }
                 }
 
-        # 5. Median Queries (Requirement 5)
+        # 5. Average / Mean Queries (e.g. "What is the average cholesterol?", "What is the average age?", "What is the average maximum heart rate?")
+        if any(w in q_lower for w in ["average", "mean", "avg"]):
+            target_col = None
+            if "glucose" in q_lower or "sugar" in q_lower or "fbs" in q_lower:
+                fbs_high_count = len(self.df[self.df["fbs_bool"] == True])
+                fbs_total = len(self.df.dropna(subset=["fbs_bool"]))
+                pct_fbs = (fbs_high_count / fbs_total) * 100 if fbs_total else 0
+                return {
+                    "success": True,
+                    "answer": (
+                        f"Deterministic Dataset Analytics\n\n"
+                        f"Query:\n{query}\n\n"
+                        f"Parameter: Fasting Blood Sugar / Glucose (> 120 mg/dL indicator)\n"
+                        f"Operation: AVERAGE / PREVALENCE\n\n"
+                        f"Result:\n{pct_fbs:.1f}% elevated glucose prevalence ({fbs_high_count} out of {fbs_total} records)"
+                    ),
+                    "retrieved_evidence": [],
+                    "has_relevant_evidence": True,
+                    "query_type": "structured_average",
+                    "debug": {"column": "fbs", "operator": "average", "value": pct_fbs, "operation": "average"}
+                }
+
+            # Check columns in priority order
+            for col in ["thalch", "oldpeak", "trestbps", "chol", "ca", "age", "num"]:
+                syns = self.column_synonyms.get(col, [])
+                if any(syn in q_lower for syn in syns):
+                    target_col = col
+                    break
+
+            if target_col and target_col in self.df.columns:
+                unit = self.get_column_unit(target_col)
+                disp_name = self.get_column_display_name(target_col)
+                unit_str = f" {unit}" if unit else ""
+
+                if "heart disease" in q_lower or "with cad" in q_lower:
+                    subset = self.df[self.df["has_heart_disease"] == True].dropna(subset=[target_col])
+                    group_str = "Patients with Heart Disease (CAD, num > 0)"
+                elif "without heart disease" in q_lower or "healthy" in q_lower:
+                    subset = self.df[self.df["has_heart_disease"] == False].dropna(subset=[target_col])
+                    group_str = "Patients without Heart Disease (Healthy, num = 0)"
+                else:
+                    subset = self.df.dropna(subset=[target_col])
+                    group_str = "All Dataset Patients"
+
+                avg_val = subset[target_col].mean()
+                return {
+                    "success": True,
+                    "answer": (
+                        f"Deterministic Dataset Analytics\n\n"
+                        f"Query:\n{query}\n\n"
+                        f"Parameter: {disp_name}\n"
+                        f"Applied Cohort: {group_str}\n"
+                        f"Operation: AVERAGE / MEAN\n\n"
+                        f"Result:\n{avg_val:.2f}{unit_str}\n\n"
+                        f"Calculated across {len(subset)} records with valid measurements."
+                    ),
+                    "retrieved_evidence": [],
+                    "has_relevant_evidence": True,
+                    "query_type": "structured_average",
+                    "debug": {"column": target_col, "operator": "average", "value": avg_val, "operation": "average"}
+                }
+
+        # 6. Median Queries (e.g. "What is the median age?", "What is the median cholesterol?")
         if "median" in q_lower:
-            if "glucose" in q_lower or "fbs" in q_lower or "sugar" in q_lower:
-                # Fasting blood sugar is boolean in heart_disease.csv
+            target_col = None
+            for col in ["thalch", "oldpeak", "age", "chol", "trestbps", "ca", "fbs"]:
+                syns = self.column_synonyms.get(col, [])
+                if any(syn in q_lower for syn in syns):
+                    target_col = col
+                    break
+
+            if target_col == "fbs":
                 fbs_high_count = len(self.df[self.df["fbs_bool"] == True])
                 fbs_total = len(self.df.dropna(subset=["fbs_bool"]))
                 pct = (fbs_high_count / fbs_total) * 100 if fbs_total else 0
                 return {
                     "success": True,
                     "answer": (
+                        f"Deterministic Dataset Analytics\n\n"
+                        f"Query:\n{query}\n\n"
                         f"Parameter: Fasting Blood Sugar / Glucose (> 120 mg/dL indicator)\n"
-                        f"Note: In this dataset, glucose is recorded as a clinical threshold indicator (fbs > 120 mg/dL).\n"
-                        f"Patients with Elevated Glucose (>120 mg/dL): {fbs_high_count} out of {fbs_total} evaluated records ({pct:.1f}%)\n"
-                        f"Median Category: Normal (<= 120 mg/dL)"
+                        f"Operation: MEDIAN\n\n"
+                        f"Result:\nMedian Category: Normal (<= 120 mg/dL)\n"
+                        f"Patients with Elevated Glucose (>120 mg/dL): {fbs_high_count} out of {fbs_total} records ({pct:.1f}%)"
                     ),
                     "retrieved_evidence": [],
                     "has_relevant_evidence": True,
-                    "query_type": "structured_median"
+                    "query_type": "structured_median",
+                    "debug": {"column": "fbs", "operator": "median", "value": "Normal (<=120 mg/dL)", "operation": "median"}
                 }
 
-            for col in ["age", "chol", "trestbps", "thalch", "oldpeak"]:
-                syns = self.column_synonyms.get(col, [])
-                if any(syn in q_lower for syn in syns):
-                    unit = self.get_column_unit(col)
-                    disp_name = self.get_column_display_name(col)
-                    unit_str = f" {unit}" if unit else ""
-
-                    if "heart disease" in q_lower:
-                        subset = self.df[self.df["has_heart_disease"] == True].dropna(subset=[col])
-                        group_str = "Patients with Heart Disease"
-                    else:
-                        subset = self.df.dropna(subset=[col])
-                        group_str = "All Patients"
-
-                    med_val = subset[col].median()
-                    return {
-                        "success": True,
-                        "answer": (
-                            f"Parameter: {disp_name}\n"
-                            f"Applied Condition/Group: {group_str}\n"
-                            f"Number of Records Considered: {len(subset)}\n"
-                            f"Calculated Median: {med_val:.2f}{unit_str}"
-                        ),
-                        "retrieved_evidence": [],
-                        "has_relevant_evidence": True,
-                        "query_type": "structured_median"
-                    }
-
-        # 6. Minimum / Maximum Queries (Requirement 5)
-        if any(w in q_lower for w in ["highest", "maximum", "max", "lowest", "minimum", "min"]):
-            is_max = any(w in q_lower for w in ["highest", "maximum", "max"])
-
-            for col in ["chol", "trestbps", "thalch", "age", "oldpeak"]:
-                syns = self.column_synonyms.get(col, [])
-                if any(syn in q_lower for syn in syns):
-                    unit = self.get_column_unit(col)
-                    disp_name = self.get_column_display_name(col)
-                    unit_str = f" {unit}" if unit else ""
-
-                    if "heart disease" in q_lower:
-                        subset = self.df[self.df["has_heart_disease"] == True].dropna(subset=[col])
-                        group_str = "Patients with Heart Disease"
-                    else:
-                        subset = self.df.dropna(subset=[col])
-                        group_str = "All Patients"
-
-                    if is_max:
-                        val = subset[col].max()
-                        rec = subset[subset[col] == val].iloc[0]
-                        val_label = "Maximum / Highest"
-                    else:
-                        val = subset[col].min()
-                        rec = subset[subset[col] == val].iloc[0]
-                        val_label = "Minimum / Lowest"
-
-                    p_id = rec.get("id", "N/A")
-                    p_name = rec.get("patient_id", f"Patient {p_id}")
-
-                    return {
-                        "success": True,
-                        "answer": (
-                            f"Parameter: {disp_name}\n"
-                            f"{val_label} Value: {val}{unit_str}\n"
-                            f"Applied Condition: {group_str}\n"
-                            f"Relevant Patient: Patient ID {p_id} ({p_name})"
-                        ),
-                        "retrieved_evidence": [],
-                        "has_relevant_evidence": True,
-                        "query_type": "structured_min_max"
-                    }
-
-        # 7. Percentage Queries (Requirement 5)
-        if "what percentage" in q_lower or "percentage of" in q_lower or "% of" in q_lower or "percent of" in q_lower:
-            # Condition: Age above X with heart disease
-            age_cut = re.search(r"(?:above|older than|over)\s*(?:age\s*)?(\d+)", q_lower)
-            if age_cut and ("heart disease" in q_lower or "cad" in q_lower):
-                cut = float(age_cut.group(1))
-                base_df = self.df[self.df["age"] > cut]
-                matching = base_df[base_df["has_heart_disease"] == True]
-                pct = (len(matching) / len(base_df)) * 100 if len(base_df) else 0
-                answer = (
-                    f"Condition: Patients older than {int(cut)} with Heart Disease\n"
-                    f"Matching Patients: {len(matching)}\n"
-                    f"Total Patients Older Than {int(cut)}: {len(base_df)}\n"
-                    f"Percentage: {pct:.1f}%"
-                )
-                return {
-                    "success": True,
-                    "answer": answer,
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_percentage"
-                }
-
-            if "heart disease" in q_lower or "cad" in q_lower:
-                matching_count = len(self.df[self.df["has_heart_disease"] == True])
-                total_count = len(self.df)
-                pct = (matching_count / total_count) * 100
-                answer = (
-                    f"Condition: Heart Disease (Diagnosis Outcome > 0)\n"
-                    f"Matching Patients: {matching_count}\n"
-                    f"Total Patients: {total_count}\n"
-                    f"Percentage: {pct:.1f}%"
-                )
-                return {
-                    "success": True,
-                    "answer": answer,
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_percentage"
-                }
-
-            if "glucose" in q_lower or "blood sugar" in q_lower or "fbs" in q_lower:
-                matching_count = len(self.df[self.df["fbs_bool"] == True])
-                total_count = len(self.df.dropna(subset=["fbs_bool"]))
-                pct = (matching_count / total_count) * 100 if total_count else 0
-                answer = (
-                    f"Condition: Fasting Blood Sugar / Glucose > 120 mg/dL\n"
-                    f"Matching Patients: {matching_count}\n"
-                    f"Total Evaluated Patients: {total_count}\n"
-                    f"Percentage: {pct:.1f}%"
-                )
-                return {
-                    "success": True,
-                    "answer": answer,
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_percentage"
-                }
-
-            if "older than" in q_lower or "above age" in q_lower or "age >" in q_lower:
-                m = re.search(r"(\d+)", q_lower)
-                if m:
-                    val = float(m.group(1))
-                    matching_count = len(self.df[self.df["age"] > val])
-                    total_count = len(self.df.dropna(subset=["age"]))
-                    pct = (matching_count / total_count) * 100 if total_count else 0
-                    answer = (
-                        f"Condition: Age > {int(val)} years\n"
-                        f"Matching Patients: {matching_count}\n"
-                        f"Total Patients: {total_count}\n"
-                        f"Percentage: {pct:.1f}%"
-                    )
-                    return {
-                        "success": True,
-                        "answer": answer,
-                        "retrieved_evidence": [],
-                        "has_relevant_evidence": True,
-                        "query_type": "structured_percentage"
-                    }
-
-        # 8. Average / Mean Queries (Requirement 5)
-        if "average" in q_lower or "mean" in q_lower:
-            # Average glucose / fbs
-            if "glucose" in q_lower or "sugar" in q_lower or "fbs" in q_lower:
-                if "heart disease" in q_lower:
-                    subset_hd = self.df[self.df["has_heart_disease"] == True]
-                    fbs_high_count = len(subset_hd[subset_hd["fbs_bool"] == True])
-                    fbs_total = len(subset_hd.dropna(subset=["fbs_bool"]))
-                    pct_fbs = (fbs_high_count / fbs_total) * 100 if fbs_total else 0
-                    return {
-                        "success": True,
-                        "answer": (
-                            f"Parameter: Fasting Blood Sugar / Glucose (> 120 mg/dL indicator)\n"
-                            f"Applied Condition/Group: Patients with Heart Disease (num > 0)\n"
-                            f"Number of Records Considered: {fbs_total}\n"
-                            f"Calculated High Glucose Prevalence: {fbs_high_count} patients ({pct_fbs:.1f}%)"
-                        ),
-                        "retrieved_evidence": [],
-                        "has_relevant_evidence": True,
-                        "query_type": "structured_average"
-                    }
-                else:
-                    fbs_high_count = len(self.df[self.df["fbs_bool"] == True])
-                    fbs_total = len(self.df.dropna(subset=["fbs_bool"]))
-                    pct_fbs = (fbs_high_count / fbs_total) * 100 if fbs_total else 0
-                    return {
-                        "success": True,
-                        "answer": (
-                            f"Parameter: Fasting Blood Sugar / Glucose (> 120 mg/dL indicator)\n"
-                            f"Note: Glucose in this dataset is measured as fasting blood sugar > 120 mg/dL.\n"
-                            f"Applied Condition/Group: All Dataset Patients\n"
-                            f"Number of Records Considered: {fbs_total}\n"
-                            f"Calculated High Glucose Prevalence: {fbs_high_count} patients ({pct_fbs:.1f}%)"
-                        ),
-                        "retrieved_evidence": [],
-                        "has_relevant_evidence": True,
-                        "query_type": "structured_average"
-                    }
-
-            # Average age of patients with chest pain
-            if "age" in q_lower and "chest pain" in q_lower:
-                subset = self.df[self.df["cp"].notna()]
-                avg_age = subset["age"].mean()
-                return {
-                    "success": True,
-                    "answer": (
-                        f"Parameter: Age\n"
-                        f"Applied Condition/Group: Patients with recorded chest pain\n"
-                        f"Number of Records Considered: {len(subset)}\n"
-                        f"Calculated Average: {avg_age:.2f} years"
-                    ),
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_average"
-                }
-
-            # General average parameter queries (age, chol, trestbps, thalch, oldpeak)
-            for col in ["age", "chol", "trestbps", "thalch", "oldpeak"]:
-                syns = self.column_synonyms.get(col, [])
-                if any(syn in q_lower for syn in syns):
-                    unit = self.get_column_unit(col)
-                    disp_name = self.get_column_display_name(col)
-
-                    if "heart disease" in q_lower or "with cad" in q_lower:
-                        subset = self.df[self.df["has_heart_disease"] == True].dropna(subset=[col])
-                        group_str = "Patients with Heart Disease (num > 0)"
-                    elif "without heart disease" in q_lower or "healthy" in q_lower:
-                        subset = self.df[self.df["has_heart_disease"] == False].dropna(subset=[col])
-                        group_str = "Patients without Heart Disease (Healthy, num = 0)"
-                    else:
-                        subset = self.df.dropna(subset=[col])
-                        group_str = "All Dataset Patients"
-
-                    avg_val = subset[col].mean()
-                    unit_str = f" {unit}" if unit else ""
-                    return {
-                        "success": True,
-                        "answer": (
-                            f"Parameter: {disp_name}\n"
-                            f"Applied Condition/Group: {group_str}\n"
-                            f"Number of Records Considered: {len(subset)}\n"
-                            f"Calculated Average: {avg_val:.2f}{unit_str}"
-                        ),
-                        "retrieved_evidence": [],
-                        "has_relevant_evidence": True,
-                        "query_type": "structured_average"
-                    }
-
-        # 9. Grouping / Distribution Queries (Requirement 5)
-        if "each age group" in q_lower or "by age group" in q_lower or "age groups" in q_lower or "in each age group" in q_lower:
-            bins = [0, 39, 49, 59, 69, 120]
-            labels = ["Under 40", "40-49", "50-59", "60-69", "70+"]
-            df_copy = self.df.copy()
-            df_copy["age_group"] = pd.cut(df_copy["age"], bins=bins, labels=labels, right=True)
-            counts = df_copy["age_group"].value_counts().sort_index()
-
-            lines = []
-            for grp, cnt in counts.items():
-                pct = (cnt / len(df_copy)) * 100
-                lines.append(f"• Age Group {grp}: {cnt} patients ({pct:.1f}%)")
-
-            answer = (
-                f"Patient Distribution by Age Group (Total {len(df_copy)} Patients):\n\n"
-                + "\n".join(lines)
-            )
-            return {
-                "success": True,
-                "answer": answer,
-                "retrieved_evidence": [],
-                "has_relevant_evidence": True,
-                "query_type": "structured_grouping"
-            }
-
-        if "each heart disease category" in q_lower or "by heart disease category" in q_lower or "each category" in q_lower:
-            for col in ["chol", "trestbps", "thalch", "age"]:
-                syns = self.column_synonyms.get(col, [])
-                if any(syn in q_lower for syn in syns):
-                    disp_name = self.get_column_display_name(col)
-                    unit = self.get_column_unit(col)
-                    unit_str = f" {unit}" if unit else ""
-
-                    category_map = {
-                        0: "Class 0 (Healthy / No CAD)",
-                        1: "Class 1 (Mild CAD)",
-                        2: "Class 2 (Moderate CAD)",
-                        3: "Class 3 (Severe CAD)",
-                        4: "Class 4 (Very Severe CAD)"
-                    }
-                    grouped = self.df.groupby("num")[col].agg(["count", "mean", "median"]).reset_index()
-                    lines = []
-                    for _, g in grouped.iterrows():
-                        cat_label = category_map.get(int(g["num"]), f"Class {g['num']}")
-                        lines.append(f"• {cat_label}: Count = {int(g['count'])}, Average = {g['mean']:.2f}{unit_str}, Median = {g['median']:.2f}{unit_str}")
-
-                    answer = (
-                        f"Distribution of {disp_name} across Heart Disease Severity Categories:\n\n"
-                        + "\n".join(lines)
-                    )
-                    return {
-                        "success": True,
-                        "answer": answer,
-                        "retrieved_evidence": [],
-                        "has_relevant_evidence": True,
-                        "query_type": "structured_grouping"
-                    }
-
-        # 10. Multi-Condition Count Queries (Requirement 2 & 5)
-        # e.g., "How many patients have age > 50 and glucose > 120?"
-        if ("age" in q_lower) and ("glucose" in q_lower or "fbs" in q_lower or "sugar" in q_lower) and ("and" in q_lower):
-            age_m = re.search(r"age\s*(?:>|>=|above|over|older than)?\s*(\d+)", q_lower)
-            if age_m:
-                age_val = float(age_m.group(1))
-                subset = self.df[(self.df["age"] > age_val) & (self.df["fbs_bool"] == True)]
-                count = len(subset)
-                total = len(self.df.dropna(subset=["age", "fbs_bool"]))
-                pct = (count / total) * 100 if total else 0
-
-                sample_pids = subset["patient_id"].head(8).tolist()
-                answer = (
-                    f"Condition: Age > {int(age_val)} AND Fasting Blood Sugar / Glucose > 120 mg/dL\n"
-                    f"Patient Count: {count} patients (out of {total} valid records, {pct:.1f}%)\n"
-                    f"Sample Matching Patient IDs: {', '.join(sample_pids)}..."
-                )
-                return {
-                    "success": True,
-                    "answer": answer,
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_count",
-                    "count": count
-                }
-
-        # e.g., "cholesterol > 250 and blood pressure > 140"
-        multi_chol_bp = re.search(r"cholesterol\s*(?:>|above|over)\s*(\d+).*?(?:blood pressure|bp|trestbps)\s*(?:>|above|over)\s*(\d+)", q_lower)
-        if multi_chol_bp:
-            chol_cut = float(multi_chol_bp.group(1))
-            bp_cut = float(multi_chol_bp.group(2))
-            subset = self.df[(self.df["chol"] > chol_cut) & (self.df["trestbps"] > bp_cut)]
-            count = len(subset)
-            total = len(self.df.dropna(subset=["chol", "trestbps"]))
-
-            sample_rows = subset[["patient_id", "chol", "trestbps"]].head(5)
-            sample_str = "; ".join([f"{r['patient_id']} (Chol: {r['chol']}, BP: {r['trestbps']})" for _, r in sample_rows.iterrows()])
-
-            answer = (
-                f"Condition: Cholesterol > {int(chol_cut)} mg/dL AND Blood Pressure > {int(bp_cut)} mmHg\n"
-                f"Patient Count: {count} patients (out of {total} valid records)\n"
-                f"Sample Matching Records: {sample_str}"
-            )
-            return {
-                "success": True,
-                "answer": answer,
-                "retrieved_evidence": [],
-                "has_relevant_evidence": True,
-                "query_type": "structured_count",
-                "count": count
-            }
-
-        # 11. Range Queries (e.g. "age between 40 and 60", "between 40 and 60")
-        between_match = re.search(r"(?:between|from)\s*(?:age\s*)?(\d+)\s*(?:and|to)\s*(\d+)", q_lower)
-        if between_match:
-            low_val = float(between_match.group(1))
-            high_val = float(between_match.group(2))
-
-            # Determine column (default to age if age in query or unspecified)
-            col = "age"
-            if "cholesterol" in q_lower or "chol" in q_lower:
-                col = "chol"
-            elif "blood pressure" in q_lower or "bp" in q_lower:
-                col = "trestbps"
-            elif "heart rate" in q_lower:
-                col = "thalch"
-
-            disp_name = self.get_column_display_name(col)
-            unit = self.get_column_unit(col)
-            unit_str = f" {unit}" if unit else ""
-
-            subset = self.df[(self.df[col] >= low_val) & (self.df[col] <= high_val)]
-            count = len(subset)
-            total = len(self.df.dropna(subset=[col]))
-            pct = (count / total) * 100 if total else 0
-
-            answer = (
-                f"Condition: {disp_name} Between {int(low_val)} and {int(high_val)}{unit_str}\n"
-                f"Patient Count: {count} patients (out of {total} total records, {pct:.1f}%)\n"
-                f"Sample Matching Patient IDs: {', '.join(subset['patient_id'].head(10))}..."
-            )
-            return {
-                "success": True,
-                "answer": answer,
-                "retrieved_evidence": [],
-                "has_relevant_evidence": True,
-                "query_type": "structured_count",
-                "count": count
-            }
-
-        # 12. Explicit Biomarker & Column Condition Handlers (Requirement 2 & 5)
-        # 12a. Glucose / Fasting Blood Sugar (> 120 mg/dL or other threshold)
-        if "glucose" in q_lower or "fbs" in q_lower or "blood sugar" in q_lower:
-            fbs_match = re.search(r"(?:>|>=|above|over|exceeding)\s*(\d+)", q_lower)
-            cutoff = float(fbs_match.group(1)) if fbs_match else 120.0
-            
-            subset = self.df[self.df["fbs_bool"] == True]
-            count = len(subset)
-            total_evaluated = len(self.df.dropna(subset=["fbs_bool"]))
-            pct = (count / total_evaluated) * 100 if total_evaluated else 0
-
-            answer = (
-                f"Condition: Fasting Blood Sugar / Glucose > {int(cutoff)} mg/dL (fbs = True)\n"
-                f"Patient Count: {count} patients (out of {total_evaluated} evaluated records, {pct:.1f}%)\n"
-                f"Sample Matching Patient IDs: {', '.join(subset['patient_id'].head(8))}..."
-            )
-            return {
-                "success": True,
-                "answer": answer,
-                "retrieved_evidence": [],
-                "has_relevant_evidence": True,
-                "query_type": "structured_count",
-                "count": count
-            }
-
-        # 12b. Heart Disease Condition
-        if ("heart disease" in q_lower or "cad" in q_lower) and ("how many" in q_lower or "count" in q_lower or "number of" in q_lower or "patients with" in q_lower):
-            subset = self.df[self.df["has_heart_disease"] == True]
-            count = len(subset)
-            total = len(self.df)
-            pct = (count / total) * 100
-            sample_ids = subset["patient_id"].head(10).tolist()
-
-            answer = (
-                f"Condition: Heart Disease (Diagnosis Outcome > 0)\n"
-                f"Patient Count: {count} out of {total} total patients ({pct:.1f}%)\n"
-                f"Matching Patient Records Sample: {', '.join(sample_ids)}..."
-            )
-            return {
-                "success": True,
-                "answer": answer,
-                "retrieved_evidence": [],
-                "has_relevant_evidence": True,
-                "query_type": "structured_count",
-                "count": count,
-                "total": total
-            }
-
-        # 12c. Cholesterol Conditions (e.g. cholesterol > 250, cholesterol < 200)
-        if "cholesterol" in q_lower or "chol" in q_lower or "hypercholesterolemia" in q_lower:
-            chol_match = re.search(r"(\>|\<|\>=|\<=|==|=|>|<|above|below|over|under)\s*(\d+(?:\.\d+)?)", q_lower)
-            if chol_match:
-                op = chol_match.group(1).strip()
-                val = float(chol_match.group(2))
-
-                if op in [">", "above", "over"]:
-                    subset = self.df[self.df["chol"] > val]
-                    cond_str = f"Serum Cholesterol > {val} mg/dL"
-                    assert all(subset["chol"] > val), "Filter validation failed"
-                elif op in ["<", "below", "under"]:
-                    subset = self.df[self.df["chol"] < val]
-                    cond_str = f"Serum Cholesterol < {val} mg/dL"
-                    assert all(subset["chol"] < val), "Filter validation failed"
-                elif op in [">="]:
-                    subset = self.df[self.df["chol"] >= val]
-                    cond_str = f"Serum Cholesterol >= {val} mg/dL"
-                    assert all(subset["chol"] >= val), "Filter validation failed"
-                elif op in ["<="]:
-                    subset = self.df[self.df["chol"] <= val]
-                    cond_str = f"Serum Cholesterol <= {val} mg/dL"
-                    assert all(subset["chol"] <= val), "Filter validation failed"
-                else:
-                    subset = self.df[self.df["chol"] == val]
-                    cond_str = f"Serum Cholesterol = {val} mg/dL"
-                    assert all(subset["chol"] == val), "Filter validation failed"
-
-                count = len(subset)
-                total = len(self.df.dropna(subset=["chol"]))
-                pct = (count / total) * 100 if total else 0
-
-                if any(w in q_lower for w in ["show", "list", "find", "give me"]):
-                    rows = []
-                    for _, r in subset.head(15).iterrows():
-                        rows.append(f"• Patient ID {r['id']} ({r['patient_id']}): Cholesterol = {r['chol']} mg/dL, Age {r['age']}, Sex {r['sex']}, CAD: {'Yes' if r['has_heart_disease'] else 'No'}")
-                    answer = (
-                        f"Filter Condition: {cond_str}\n"
-                        f"Total Matching Patients: {count} records found ({pct:.1f}%)\n\n"
-                        f"Validated Matching Patient Records (showing up to 15):\n"
-                        + "\n".join(rows)
-                    )
-                    return {
-                        "success": True,
-                        "answer": answer,
-                        "retrieved_evidence": [],
-                        "has_relevant_evidence": True,
-                        "query_type": "structured_filter",
-                        "count": count
-                    }
-                else:
-                    answer = (
-                        f"Condition: {cond_str}\n"
-                        f"Patient Count: {count} (out of {total} records, {pct:.1f}%)\n"
-                        f"Sample Matching Records: {', '.join(subset['patient_id'].head(8))}..."
-                    )
-                    return {
-                        "success": True,
-                        "answer": answer,
-                        "retrieved_evidence": [],
-                        "has_relevant_evidence": True,
-                        "query_type": "structured_count",
-                        "count": count
-                    }
-
-        # 12d. Blood Pressure Conditions (e.g. blood pressure > 140)
-        if "blood pressure" in q_lower or "bp" in q_lower or "trestbps" in q_lower or "hypertension" in q_lower:
-            bp_match = re.search(r"(\>|\<|\>=|\<=|==|=|>|<|above|below|over|under)\s*(\d+(?:\.\d+)?)", q_lower)
-            if bp_match:
-                op = bp_match.group(1).strip()
-                val = float(bp_match.group(2))
-
-                if op in [">", "above", "over"]:
-                    subset = self.df[self.df["trestbps"] > val]
-                    cond_str = f"Resting Blood Pressure > {val} mmHg"
-                elif op in ["<", "below", "under"]:
-                    subset = self.df[self.df["trestbps"] < val]
-                    cond_str = f"Resting Blood Pressure < {val} mmHg"
-                elif op in [">="]:
-                    subset = self.df[self.df["trestbps"] >= val]
-                    cond_str = f"Resting Blood Pressure >= {val} mmHg"
-                else:
-                    subset = self.df[self.df["trestbps"] == val]
-                    cond_str = f"Resting Blood Pressure = {val} mmHg"
-
-                count = len(subset)
-                total = len(self.df.dropna(subset=["trestbps"]))
-                pct = (count / total) * 100 if total else 0
-
-                answer = (
-                    f"Condition: {cond_str}\n"
-                    f"Patient Count: {count} (out of {total} records, {pct:.1f}%)\n"
-                    f"Sample Matching Records: {', '.join(subset['patient_id'].head(8))}..."
-                )
-                return {
-                    "success": True,
-                    "answer": answer,
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_count",
-                    "count": count
-                }
-
-        # 12e. Age Conditions (e.g. older than 65, age > 65, younger than 40, age >= 50)
-        if "age" in q_lower or "older than" in q_lower or "younger than" in q_lower or "years old" in q_lower or "aged" in q_lower:
-            # Check Older than / Above age
-            older_match = re.search(r"(?:older than|above|over|greater than|>)\s*(?:age\s*)?(\d+)", q_lower)
-            if not older_match and "age >" in q_lower:
-                older_match = re.search(r"age\s*>\s*(\d+)", q_lower)
-
-            if older_match:
-                cutoff = float(older_match.group(1))
-                subset = self.df[self.df["age"] > cutoff]
-                count = len(subset)
-                total = len(self.df.dropna(subset=["age"]))
-                pct = (count / total) * 100 if total else 0
-
-                assert all(subset["age"] > cutoff), "Filter validation failure"
-
-                matching_vals = subset["age"].head(10).astype(int).tolist()
-                matching_str = ", ".join(map(str, matching_vals))
-
-                answer = (
-                    f"Condition: Age > {int(cutoff)} years\n"
-                    f"Patient Count: {count} (out of {total} records, {pct:.1f}%)\n"
-                    f"Sample Matching Ages: {matching_str}..."
-                )
-                return {
-                    "success": True,
-                    "answer": answer,
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_count",
-                    "count": count
-                }
-
-            # Check Younger than / Under age
-            younger_match = re.search(r"(?:younger than|under|below|less than|<)\s*(?:age\s*)?(\d+)", q_lower)
-            if not younger_match and "age <" in q_lower:
-                younger_match = re.search(r"age\s*<\s*(\d+)", q_lower)
-
-            if younger_match:
-                cutoff = float(younger_match.group(1))
-                subset = self.df[self.df["age"] < cutoff]
-                count = len(subset)
-                total = len(self.df.dropna(subset=["age"]))
-                pct = (count / total) * 100 if total else 0
-
-                assert all(subset["age"] < cutoff), "Filter validation failure"
-
-                answer = (
-                    f"Condition: Age < {int(cutoff)} years\n"
-                    f"Patient Count: {count} (out of {total} records, {pct:.1f}%)\n"
-                    f"Sample Matching Patient IDs: {', '.join(subset['patient_id'].head(8))}..."
-                )
-                return {
-                    "success": True,
-                    "answer": answer,
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_count",
-                    "count": count
-                }
-
-            # Check Age >= or <=
-            ge_match = re.search(r"age\s*>=\s*(\d+)", q_lower)
-            if ge_match:
-                cutoff = float(ge_match.group(1))
-                subset = self.df[self.df["age"] >= cutoff]
-                count = len(subset)
-                total = len(self.df.dropna(subset=["age"]))
-                pct = (count / total) * 100 if total else 0
-
-                answer = (
-                    f"Condition: Age >= {int(cutoff)} years\n"
-                    f"Patient Count: {count} (out of {total} records, {pct:.1f}%)\n"
-                    f"Sample Matching Patient IDs: {', '.join(subset['patient_id'].head(8))}..."
-                )
-                return {
-                    "success": True,
-                    "answer": answer,
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_count",
-                    "count": count
-                }
-            pct = (count / total) * 100
-            sample_ids = subset["patient_id"].head(10).tolist()
-
-            answer = (
-                f"Condition: Heart Disease (Diagnosis Outcome > 0)\n"
-                f"Patient Count: {count} out of {total} total patients ({pct:.1f}%)\n"
-                f"Matching Patient Records Sample: {', '.join(sample_ids)}..."
-            )
-            return {
-                "success": True,
-                "answer": answer,
-                "retrieved_evidence": [],
-                "has_relevant_evidence": True,
-                "query_type": "structured_count",
-                "count": count,
-                "total": total
-            }
-
-        # 12e. General Column Numeric Condition Count (e.g. cholesterol > 250, blood pressure > 140)
-        num_cond_match = re.search(r"([a-zA-Z\s]+)\s*(\>|\<|\>=|\<=|==|=|>|<|above|below|over|under)\s*(\d+(?:\.\d+)?)", q_lower)
-        if num_cond_match:
-            param_str = num_cond_match.group(1).strip()
-            op = num_cond_match.group(2).strip()
-            val = float(num_cond_match.group(3))
-
-            col = self.match_column(param_str)
-            if col and col in self.df.columns:
-                unit = self.get_column_unit(col)
-                disp_name = self.get_column_display_name(col)
+            if target_col and target_col in self.df.columns:
+                unit = self.get_column_unit(target_col)
+                disp_name = self.get_column_display_name(target_col)
                 unit_str = f" {unit}" if unit else ""
 
-                if op in [">", "above", "over"]:
-                    subset = self.df[self.df[col] > val]
-                    cond_str = f"{disp_name} > {val}{unit_str}"
-                    assert all(subset[col] > val), "Filter validation failed"
-                elif op in ["<", "below", "under"]:
-                    subset = self.df[self.df[col] < val]
-                    cond_str = f"{disp_name} < {val}{unit_str}"
-                    assert all(subset[col] < val), "Filter validation failed"
-                elif op in [">="]:
-                    subset = self.df[self.df[col] >= val]
-                    cond_str = f"{disp_name} >= {val}{unit_str}"
-                    assert all(subset[col] >= val), "Filter validation failed"
-                elif op in ["<="]:
-                    subset = self.df[self.df[col] <= val]
-                    cond_str = f"{disp_name} <= {val}{unit_str}"
-                    assert all(subset[col] <= val), "Filter validation failed"
+                if "heart disease" in q_lower:
+                    subset = self.df[self.df["has_heart_disease"] == True].dropna(subset=[target_col])
+                    group_str = "Patients with Heart Disease"
                 else:
-                    subset = self.df[self.df[col] == val]
-                    cond_str = f"{disp_name} = {val}{unit_str}"
-                    assert all(subset[col] == val), "Filter validation failed"
+                    subset = self.df.dropna(subset=[target_col])
+                    group_str = "All Dataset Patients"
 
-                count = len(subset)
-                total = len(self.df.dropna(subset=[col]))
-                pct = (count / total) * 100 if total else 0
+                med_val = subset[target_col].median()
+                return {
+                    "success": True,
+                    "answer": (
+                        f"Deterministic Dataset Analytics\n\n"
+                        f"Query:\n{query}\n\n"
+                        f"Parameter: {disp_name}\n"
+                        f"Applied Cohort: {group_str}\n"
+                        f"Operation: MEDIAN\n\n"
+                        f"Result:\n{med_val:.2f}{unit_str}\n\n"
+                        f"Calculated across {len(subset)} records with non-null values."
+                    ),
+                    "retrieved_evidence": [],
+                    "has_relevant_evidence": True,
+                    "query_type": "structured_median",
+                    "debug": {"column": target_col, "operator": "median", "value": med_val, "operation": "median"}
+                }
 
-                # Format listing if asked to "show" or "list"
-                if any(w in q_lower for w in ["show", "list", "find", "give me"]):
+        # 7. Minimum / Maximum Extremum Queries (ONLY when query specifically asks for the extremum)
+        # e.g. "What is the maximum cholesterol?", "What is the minimum cholesterol?"
+        is_explicit_min_max_query = (
+            re.search(r"\b(what is the highest|what is the maximum|what is the max|what is the lowest|what is the minimum|what is the min|highest .* in the dataset|maximum .* in the dataset|lowest .* in the dataset|minimum .* in the dataset)\b", q_lower) or
+            (q_lower.startswith(("highest ", "maximum ", "max ", "lowest ", "minimum ", "min ")) and not any(sym in q_lower for sym in [">", "<", ">=", "<=", "=", "between", "above", "below"]))
+        ) and not any(w in q_lower for w in ["how many", "count of", "which patients", "list patients", "show patients", "older than", "younger than", "greater than", "less than"])
+
+        if is_explicit_min_max_query:
+            is_max = any(w in q_lower for w in ["highest", "maximum", "max", "largest"])
+            op_label = "MAXIMUM" if is_max else "MINIMUM"
+
+            target_col = None
+            for col in ["thalch", "oldpeak", "chol", "trestbps", "ca", "age", "num"]:
+                syns = self.column_synonyms.get(col, [])
+                if any(syn in q_lower for syn in syns):
+                    target_col = col
+                    break
+
+            if target_col and target_col in self.df.columns:
+                unit = self.get_column_unit(target_col)
+                disp_name = self.get_column_display_name(target_col)
+                unit_str = f" {unit}" if unit else ""
+
+                if "heart disease" in q_lower:
+                    subset = self.df[self.df["has_heart_disease"] == True].dropna(subset=[target_col])
+                    group_str = "Patients with Heart Disease"
+                else:
+                    subset = self.df.dropna(subset=[target_col])
+                    group_str = "All Dataset Patients"
+
+                val = subset[target_col].max() if is_max else subset[target_col].min()
+                rec = subset[subset[target_col] == val].iloc[0]
+                p_id = rec.get("id", "N/A")
+                p_name = rec.get("patient_id", f"Patient {p_id}")
+
+                return {
+                    "success": True,
+                    "answer": (
+                        f"Deterministic Dataset Analytics\n\n"
+                        f"Query:\n{query}\n\n"
+                        f"Parameter: {disp_name}\n"
+                        f"Operation: {op_label}\n"
+                        f"Applied Cohort: {group_str}\n\n"
+                        f"Result:\n{val:.2f}{unit_str}\n\n"
+                        f"Relevant Record: Patient ID {p_id} ({p_name}) | Age: {rec['age']} | Sex: {rec['sex']}"
+                    ),
+                    "retrieved_evidence": [],
+                    "has_relevant_evidence": True,
+                    "query_type": "structured_min_max",
+                    "debug": {"column": target_col, "operator": "max" if is_max else "min", "value": val, "operation": op_label.lower()}
+                }
+
+        # 8. Multi-Condition Queries (e.g., "age > 60 and cholesterol > 200", "males with cholesterol > 200", "typical angina and heart disease", "cholesterol > 200 also have heart disease")
+        has_multi = False
+        parts = []
+        if " and " in q_lower:
+            parts = q_lower.split(" and ")
+            has_multi = True
+        elif " with " in q_lower and any(w in q_lower for w in ["heart disease", "cad", "cholesterol", "blood pressure", "glucose", "angina", "oldpeak"]):
+            parts = q_lower.split(" with ")
+            has_multi = True
+        elif " also have " in q_lower or " also has " in q_lower:
+            parts = re.split(r"\s+also\s+ha(?:ve|s)\s+", q_lower)
+            has_multi = True
+        elif " who have " in q_lower or " who has " in q_lower:
+            parts = re.split(r"\s+who\s+ha(?:ve|s)\s+", q_lower)
+            has_multi = True
+        elif re.search(r"how many (?:males|females|men|women)\s+(?:have|with|where)\b", q_lower):
+            m_sex = "male" if any(w in q_lower for w in ["male", "males", "men"]) else "female"
+            rest_clause = re.sub(r"how many (?:males|females|men|women)\s+(?:have|with|where)\b", "", q_lower)
+            parts = [m_sex, rest_clause]
+            has_multi = True
+
+        if has_multi and len(parts) >= 2:
+            clauses = [self._parse_comparison_clause(p) for p in parts]
+            clauses = [c for c in clauses if c is not None]
+
+            if len(clauses) >= 2:
+                filtered_df = self.df.copy()
+                cond_strs = []
+                for c in clauses:
+                    filtered_df, c_str = self._apply_filter_clause(filtered_df, c)
+                    cond_strs.append(c_str)
+
+                count = len(filtered_df)
+                total = len(self.df)
+                pct = (count / total) * 100
+                is_listing = any(w in q_lower for w in ["which", "list", "show", "who are"])
+
+                if is_listing:
                     rows = []
-                    for _, r in subset.head(15).iterrows():
-                        rows.append(f"• Patient ID {r['id']} ({r['patient_id']}): {disp_name} = {r[col]}{unit_str}, Age {r['age']}, Sex {r['sex']}, CAD: {'Yes' if r['has_heart_disease'] else 'No'}")
+                    for _, r in filtered_df.head(20).iterrows():
+                        diag = "CAD" if r["has_heart_disease"] else "No CAD"
+                        rows.append(f"{r['patient_id']} | {r['age']} | {r['sex']} | Chol: {r['chol']} mg/dL | BP: {r['trestbps']} mmHg | {diag}")
+
+                    table_header = "Patient ID | Age | Sex | Parameters | Diagnosis\n" + "-" * 60 + "\n"
                     answer = (
-                        f"Filter Condition: {cond_str}\n"
-                        f"Total Matching Patients: {count} records found ({pct:.1f}%)\n\n"
-                        f"Validated Matching Patient Records (showing up to 15):\n"
+                        f"Deterministic Dataset Analytics\n\n"
+                        f"Query:\n{query}\n\n"
+                        f"Conditions: {' AND '.join(cond_strs)}\n"
+                        f"Operation: PATIENT LISTING ({count} matching patients, {pct:.1f}%)\n\n"
+                        f"{table_header}"
                         + "\n".join(rows)
                     )
                     return {
@@ -1320,13 +1242,24 @@ class StructuredPatientDataEngine:
                         "retrieved_evidence": [],
                         "has_relevant_evidence": True,
                         "query_type": "structured_filter",
-                        "count": count
+                        "count": count,
+                        "debug": {
+                            "column": [c["column"] for c in clauses],
+                            "operator": [c["operator"] for c in clauses],
+                            "value": [c["value"] for c in clauses],
+                            "operation": "multi_condition_listing"
+                        }
                     }
                 else:
+                    sample_pids = filtered_df["patient_id"].head(8).tolist()
+                    sample_str = f"\n\nSample Matching Patient IDs: {', '.join(sample_pids)}..." if sample_pids else ""
+
                     answer = (
-                        f"Condition: {cond_str}\n"
-                        f"Patient Count: {count} (out of {total} records, {pct:.1f}%)\n"
-                        f"Sample Matching Records: {', '.join(subset['patient_id'].head(8))}..."
+                        f"Deterministic Dataset Analytics\n\n"
+                        f"Query:\n{query}\n\n"
+                        f"Conditions: {' AND '.join(cond_strs)}\n"
+                        f"Operation: MULTI-CONDITION COUNT\n\n"
+                        f"Result:\n{count} patients satisfy the combined criteria (out of {total} total records, {pct:.1f}%).{sample_str}"
                     )
                     return {
                         "success": True,
@@ -1334,164 +1267,142 @@ class StructuredPatientDataEngine:
                         "retrieved_evidence": [],
                         "has_relevant_evidence": True,
                         "query_type": "structured_count",
-                        "count": count
+                        "count": count,
+                        "debug": {
+                            "column": [c["column"] for c in clauses],
+                            "operator": [c["operator"] for c in clauses],
+                            "value": [c["value"] for c in clauses],
+                            "operation": "multi_condition_count"
+                        }
                     }
 
-        # 13. LLM-Assisted Fallback for Complex Arbitrary Analytical Queries
-        if self.groq_client:
-            llm_result = self._execute_with_llm_planner(query)
-            if llm_result:
-                return llm_result
+        # 9. Single Condition Count / Filter / Listing Queries (Universal Parser for ALL Columns)
+        clause = self._parse_comparison_clause(q)
+        if clause:
+            filtered_df, cond_str = self._apply_filter_clause(self.df, clause)
+            count = len(filtered_df)
+            col = clause["column"]
+            total_valid = len(self.df.dropna(subset=[col])) if col in self.df.columns else len(self.df)
+            pct = (count / total_valid) * 100 if total_valid else 0
+            disp_col = self.get_column_display_name(col)
 
+            # Determine whether user wants a listing or count
+            is_listing = any(w in q_lower for w in ["which", "show", "list", "find", "who are", "give me"]) and not any(w in q_lower for w in ["how many", "count of", "number of"])
+
+            if is_listing:
+                rows = []
+                unit = self.get_column_unit(col)
+                u_str = f" {unit}" if unit else ""
+
+                for _, r in filtered_df.head(20).iterrows():
+                    val = r.get(col, "N/A")
+                    val_str = f"{val}{u_str}" if pd.notna(val) else "N/A"
+                    diag = "CAD" if r["has_heart_disease"] else "No CAD"
+                    rows.append(f"{r['patient_id']} | {r['age']} | {r['sex']} | {disp_col}: {val_str} | {diag}")
+
+                table_header = f"Patient ID | Age | Sex | {disp_col} | Diagnosis\n" + "-" * 60 + "\n"
+                answer = (
+                    f"Deterministic Dataset Analytics\n\n"
+                    f"Query:\n{query}\n\n"
+                    f"Parameter: {disp_col}\n"
+                    f"Condition: {cond_str}\n"
+                    f"Operation: PATIENT LISTING ({count} matching records, {pct:.1f}%)\n\n"
+                    f"{table_header}"
+                    + "\n".join(rows)
+                )
+                return {
+                    "success": True,
+                    "answer": answer,
+                    "retrieved_evidence": [],
+                    "has_relevant_evidence": True,
+                    "query_type": "structured_filter",
+                    "count": count,
+                    "debug": {
+                        "column": col,
+                        "operator": clause["operator"],
+                        "value": clause["value"],
+                        "operation": "filter_listing"
+                    }
+                }
+            else:
+                sample_pids = filtered_df["patient_id"].head(8).tolist()
+                sample_str = f"\n\nSample Matching Patient IDs: {', '.join(sample_pids)}..." if sample_pids else ""
+
+                answer = (
+                    f"Deterministic Dataset Analytics\n\n"
+                    f"Query:\n{query}\n\n"
+                    f"Parameter: {disp_col}\n"
+                    f"Condition: {cond_str}\n"
+                    f"Operation: COUNT\n\n"
+                    f"Result:\n{count} patients have {cond_str.lower()} (out of {total_valid} evaluated records, {pct:.1f}%).{sample_str}"
+                )
+                return {
+                    "success": True,
+                    "answer": answer,
+                    "retrieved_evidence": [],
+                    "has_relevant_evidence": True,
+                    "query_type": "structured_count",
+                    "count": count,
+                    "debug": {
+                        "column": col,
+                        "operator": clause["operator"],
+                        "value": clause["value"],
+                        "operation": "count"
+                    }
+                }
+
+        # 10. Percentage Queries fallback
+        if "percentage" in q_lower or "%" in q_lower or "percent" in q_lower:
+            if "heart disease" in q_lower or "cad" in q_lower:
+                hd_count = len(self.df[self.df["has_heart_disease"] == True])
+                total = len(self.df)
+                pct = (hd_count / total) * 100
+                return {
+                    "success": True,
+                    "answer": (
+                        f"Deterministic Dataset Analytics\n\n"
+                        f"Query:\n{query}\n\n"
+                        f"Parameter: Heart Disease Diagnosis (Outcome > 0)\n"
+                        f"Operation: PERCENTAGE\n\n"
+                        f"Result:\n{pct:.1f}% of patients have heart disease ({hd_count} out of {total} total records)."
+                    ),
+                    "retrieved_evidence": [],
+                    "has_relevant_evidence": True,
+                    "query_type": "structured_percentage",
+                    "debug": {"column": "num", "operator": "percentage", "value": pct, "operation": "percentage"}
+                }
+
+        # Informative Error Handling with Debug Metadata
         return {
             "success": False,
-            "answer": "Unable to execute structured calculation.",
+            "answer": (
+                f"Deterministic Dataset Analytics\n\n"
+                f"Query:\n{query}\n\n"
+                f"Notice:\nUnable to execute structured calculation for the provided query parameters.\n"
+                f"Supported operations: COUNT, AVERAGE, MEDIAN, MINIMUM, MAXIMUM, FILTER LISTING, SINGLE PATIENT LOOKUP.\n"
+                f"Available parameters: age, sex, chest pain (cp), resting blood pressure (trestbps), cholesterol (chol), "
+                f"fasting blood sugar (fbs), resting ECG (restecg), max heart rate (thalch), exercise angina (exang), "
+                f"oldpeak (ST depression), slope, major vessels (ca), thal, diagnosis (num)."
+            ),
             "retrieved_evidence": [],
             "has_relevant_evidence": False,
-            "query_type": "structured_error"
+            "query_type": "structured_error",
+            "debug": {
+                "column": "unresolved",
+                "operator": "unresolved",
+                "value": "unresolved",
+                "operation": "unresolved"
+            }
         }
 
-    def _execute_with_llm_planner(self, query: str) -> Optional[Dict[str, Any]]:
-        """
-        Use Groq LLM to safely generate a structured calculation plan against the DataFrame.
-        """
-        prompt = f"""You are a clinical data scientist analyzing a cardiovascular dataset with 920 patients and columns:
-- id: integer patient ID (1 to 920)
-- age: patient age in years
-- sex: 'Male' or 'Female'
-- cp: chest pain type ('typical angina', 'atypical angina', 'non-anginal', 'asymptomatic')
-- trestbps: resting blood pressure (mmHg)
-- chol: serum cholesterol (mg/dL)
-- fbs_bool: True (if fasting blood sugar > 120 mg/dL), False otherwise
-- restecg: resting ECG ('normal', 'lv hypertrophy', 'st-t abnormality')
-- thalch: max heart rate achieved (bpm)
-- exang_bool: True (exercise induced angina), False otherwise
-- oldpeak: ST depression (mm)
-- slope: 'upsloping', 'flat', 'downsloping'
-- ca: major vessels (0 to 3)
-- thal: 'normal', 'fixed defect', 'reversable defect'
-- num: CAD diagnosis (0=No CAD, 1=Mild, 2=Moderate, 3=Severe, 4=Very Severe)
-- has_heart_disease: True (num > 0), False (num == 0)
 
-User Query: "{query}"
-
-Return a JSON plan with:
-- "calculation_type": "count" | "average" | "median" | "min" | "max" | "percentage" | "filter" | "comparison" | "grouping"
-- "target_column": column name
-- "filter_expr": pandas filter query string (e.g. "age > 50 and has_heart_disease == True") or null
-- "group_column": group column or null
-
-Output ONLY valid JSON."""
-
-        try:
-            resp = self.groq_client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.0,
-                max_tokens=300,
-                response_format={"type": "json_object"}
-            )
-            plan = json.loads(resp.choices[0].message.content)
-            calc = plan.get("calculation_type")
-            target = plan.get("target_column")
-            filter_expr = plan.get("filter_expr")
-
-            df_exec = self.df.copy()
-            if filter_expr:
-                try:
-                    df_exec = df_exec.query(filter_expr)
-                except Exception:
-                    pass
-
-            disp_name = self.get_column_display_name(target) if target else "Records"
-            unit = self.get_column_unit(target) if target else ""
-            unit_str = f" {unit}" if unit else ""
-
-            if calc == "count":
-                count = len(df_exec)
-                return {
-                    "success": True,
-                    "answer": f"Applied Condition: {filter_expr or 'All Records'}\nMatching Patient Count: {count} patients",
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_count"
-                }
-
-            if calc == "average" and target and target in df_exec.columns:
-                avg = df_exec[target].dropna().mean()
-                return {
-                    "success": True,
-                    "answer": (
-                        f"Parameter: {disp_name}\n"
-                        f"Applied Condition: {filter_expr or 'All Records'}\n"
-                        f"Records Considered: {len(df_exec[target].dropna())}\n"
-                        f"Calculated Average: {avg:.2f}{unit_str}"
-                    ),
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_average"
-                }
-
-            if calc == "median" and target and target in df_exec.columns:
-                med = df_exec[target].dropna().median()
-                return {
-                    "success": True,
-                    "answer": (
-                        f"Parameter: {disp_name}\n"
-                        f"Applied Condition: {filter_expr or 'All Records'}\n"
-                        f"Records Considered: {len(df_exec[target].dropna())}\n"
-                        f"Calculated Median: {med:.2f}{unit_str}"
-                    ),
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_median"
-                }
-
-            if calc in ["min", "max"] and target and target in df_exec.columns:
-                vals = df_exec[target].dropna()
-                val = vals.max() if calc == "max" else vals.min()
-                match_p = df_exec[df_exec[target] == val].iloc[0]
-                return {
-                    "success": True,
-                    "answer": (
-                        f"Parameter: {disp_name}\n"
-                        f"Calculated {calc.upper()}: {val}{unit_str}\n"
-                        f"Relevant Patient: Patient ID {match_p['id']} ({match_p['patient_id']})"
-                    ),
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": f"structured_{calc}"
-                }
-
-            if calc == "percentage":
-                num = len(df_exec)
-                den = len(self.df)
-                pct = (num / den) * 100
-                return {
-                    "success": True,
-                    "answer": (
-                        f"Applied Condition: {filter_expr or 'Specified Condition'}\n"
-                        f"Matching Patients: {num}\n"
-                        f"Total Patients: {den}\n"
-                        f"Percentage: {pct:.1f}%"
-                    ),
-                    "retrieved_evidence": [],
-                    "has_relevant_evidence": True,
-                    "query_type": "structured_percentage"
-                }
-        except Exception as e:
-            print(f"Error in LLM structured calculation planner: {e}")
-
-        return None
-
-
-# Global singleton instance
-_structured_engine: Optional[StructuredPatientDataEngine] = None
+# Global singleton engine instance
+_structured_engine_instance: Optional[StructuredPatientDataEngine] = None
 
 
 def get_structured_engine() -> StructuredPatientDataEngine:
-    """Get or create singleton StructuredPatientDataEngine"""
-    global _structured_engine
-    if _structured_engine is None:
-        _structured_engine = StructuredPatientDataEngine()
-    return _structured_engine
+    """Retrieve or initialize the singleton StructuredPatientDataEngine."""
+    global _structured_engine_instance
+    if _structured_engine_instance is None:
+        _structured_engine_instance = StructuredPatientDataEngine()
+    return _structured_engine_instance

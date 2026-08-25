@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Home({ activeUser, apiBase }) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [topK, setTopK] = useState(5);
   const [results, setResults] = useState([]);
@@ -332,13 +333,22 @@ function Home({ activeUser, apiBase }) {
                 <span className="hash-code">{evidenceHash}</span>
               </div>
 
-              <button
-                className="btn-secondary"
-                style={{ fontSize: "11px", padding: "3px 8px" }}
-                onClick={() => copyToClipboard(evidenceHash, "bundle")}
-              >
-                {copiedHash === "bundle" ? "✓ Copied" : "Copy Hash"}
-              </button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  className="btn-primary"
+                  style={{ fontSize: "11px", padding: "4px 12px" }}
+                  onClick={() => navigate("/audit")}
+                >
+                  ⛓️ View Blockchain Block #{blockIndex}
+                </button>
+                <button
+                  className="btn-secondary"
+                  style={{ fontSize: "11px", padding: "4px 10px" }}
+                  onClick={() => copyToClipboard(evidenceHash, "bundle")}
+                >
+                  {copiedHash === "bundle" ? "✓ Copied" : "Copy Hash"}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -418,14 +428,14 @@ function Home({ activeUser, apiBase }) {
                     )}
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <button
                       className="btn-primary"
-                      style={{ fontSize: "12px", padding: "6px 14px" }}
+                      style={{ fontSize: "11px", padding: "5px 12px" }}
                       onClick={() => navigate("/audit")}
                       title="View in Blockchain Audit Trail"
                     >
-                      ⛓️ View in Audit Trail
+                      ⛓️ View in Blockchain
                     </button>
                   </div>
                 </div>

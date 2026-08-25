@@ -6,15 +6,16 @@ Main REST API service providing:
 - Immutable Blockchain Audit Logging with SHA-256 Evidence Hashing
 - Role-Based Access Control (RBAC) across all endpoints
 - Machine Learning Heart Disease Severity Prediction & Clinical Decision Support
-- Cryptographic Blockchain & Evidence Integrity Verification
+- Cryptographic Evidence Integrity & Tampering Verification
 
 Author: RAGChainMed
 """
 
 import os
 import json
+import uuid
 import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -41,6 +42,12 @@ from app.blockchain.audit_log import (
     blockchain,
     sha256_hash
 )
+from app.blockchain.evidence_verifier import (
+    canonicalize_evidence,
+    compute_canonical_hash,
+    verify_evidence_integrity,
+    verify_query_evidence
+)
 from app.rag.enhanced_rag_pipeline import get_rag_service
 from app.predict import predict_heart_disease
 from app.clinical.clinical_decision_support import (
@@ -54,7 +61,7 @@ from app.clinical.clinical_decision_support import (
 
 app = FastAPI(
     title="RAGChainMed API",
-    description="Secure Healthcare Retrieval & Clinical Decision Support System with Blockchain Verification & RBAC",
+    description="Secure Healthcare Retrieval & Clinical Decision Support System with Blockchain Verification, Evidence Tampering Detection & RBAC",
     version="2.0.0"
 )
 
@@ -100,8 +107,35 @@ class PredictionRequest(BaseModel):
 
 class VerifyEvidenceRequest(BaseModel):
     block_index: int = Field(..., description="Blockchain block index to verify")
-    evidence_text: Optional[str] = Field(None, description="Retrieved evidence string")
-    evidence_hash: Optional[str] = Field(None, description="SHA-256 evidence hash")
+    evidence_text: Optional[Any] = Field(None, description="Retrieved evidence string or object to recalculate SHA-256")
+    stored_hash: Optional[str] = Field(None, description="Expected / stored SHA-256 hash (optional, defaults to on-chain hash)")
+    evidence_hash: Optional[str] = Field(None, description="Alias for stored_hash")
+
+
+class VerifyIntegrityRequest(BaseModel):
+    evidence_text: Any = Field(..., description="Evidence text, item, or bundle to recalculate and verify")
+    stored_hash: str = Field(..., description="Original/recorded SHA-256 hash to compare against")
+
+
+class VerifyQueryRequest(BaseModel):
+    query_id: Optional[str] = Field(None, description="Query ID or Record ID")
+    block_index: Optional[int] = Field(None, description="Blockchain block index")
+    current_evidence: Optional[Any] = Field(None, description="Current/modified evidence text to recalculate and verify")
+    stored_hash: Optional[str] = Field(None, description="Optional stored hash override to compare against")
+
+
+class VerifyBlockRequest(BaseModel):
+    block_index: int = Field(..., description="Block index to verify")
+
+
+class SimulateBlockTamperRequest(BaseModel):
+    block_index: int = Field(..., description="Block index to tamper for testing")
+    field: str = Field("action", description="Field to modify")
+    new_value: str = Field("TAMPERED_ACTION", description="New value")
+
+
+class RestoreBlockRequest(BaseModel):
+    block_index: int = Field(..., description="Block index to restore")
 
 
 # ============================================================
@@ -244,24 +278,30 @@ def perform_rag_query(query: str, user_id: str, top_k: int = 5):
     has_relevant = rag_result.get("has_relevant_evidence", False)
     is_mismatch = rag_result.get("is_mismatch", False)
 
+    query_id = f"QRY-{uuid.uuid4().hex[:8].upper()}"
+
     # 3. Log to Blockchain with SHA-256 evidence and query hashes
     record = audit_logger.add_record(
         user_id=user_id,
         action="RAG_QUERY",
         data_type="Healthcare Records",
         details={
+            "query_id": query_id,
             "query": query,
             "records_retrieved": len(retrieved_records),
             "patient_ids": patient_ids,
             "has_relevant_evidence": has_relevant,
-            "is_mismatch": is_mismatch
+            "is_mismatch": is_mismatch,
+            "retrieved_evidence_texts": retrieved_texts
         },
         status="success",
         query_text=query,
-        evidence_bundle=retrieved_texts
+        evidence_bundle=retrieved_texts if retrieved_texts else rag_result.get("answer", ""),
+        query_id=query_id
     )
 
     return {
+        "query_id": record.query_id,
         "query": query,
         "user_id": user_id,
         "answer": rag_result["answer"],
@@ -334,12 +374,15 @@ def predict_risk(
         for rec in cds_assessment.recommendations
     ]
 
+    pred_id = f"PRED-{uuid.uuid4().hex[:8].upper()}"
+
     # 5. Log prediction into Blockchain
     record = audit_logger.add_record(
         user_id=actual_user,
         action="CLINICAL_PREDICTION",
         data_type="Cardiovascular Risk Assessment",
         details={
+            "query_id": pred_id,
             "patient_id": req.patient_id,
             "prediction": prediction_result["severity"],
             "confidence": round(prediction_result["confidence"], 4),
@@ -349,10 +392,12 @@ def predict_risk(
         patient_id=req.patient_id,
         status="success",
         query_text=str(patient_data),
-        evidence_bundle=prediction_result
+        evidence_bundle=prediction_result,
+        query_id=pred_id
     )
 
     return {
+        "query_id": record.query_id,
         "patient_id": req.patient_id,
         "user_id": actual_user,
         "prediction": prediction_result["prediction"],
@@ -372,13 +417,14 @@ def predict_risk(
         "blockchain": {
             "block_index": record.block_index,
             "block_hash": record.block_hash,
-            "evidence_hash": record.evidence_hash
+            "evidence_hash": record.evidence_hash,
+            "query_id": record.query_id
         }
     }
 
 
 # ============================================================
-# BLOCKCHAIN AUDIT LOGS & VERIFICATION ENDPOINTS
+# BLOCKCHAIN AUDIT LOGS & EVIDENCE TAMPERING VERIFICATION ENDPOINTS
 # ============================================================
 
 @app.get("/api/v1/audit/logs")
@@ -402,14 +448,54 @@ def verify_blockchain_chain(
     return blockchain.verify_chain()
 
 
+@app.post("/api/v1/audit/verify-block")
+def verify_block_endpoint(
+    req: VerifyBlockRequest,
+    user_id: str = Depends(get_authorized_user)
+):
+    """
+    Verify cryptographic integrity of an individual blockchain block.
+    Reconstructs block data, calculates SHA-256 hash again, and compares with stored block hash.
+    """
+    return blockchain.verify_block(req.block_index)
+
+
+@app.get("/api/v1/audit/verify-block/{block_index}")
+def verify_block_by_get(
+    block_index: int,
+    user_id: str = Depends(get_authorized_user)
+):
+    """Verify cryptographic integrity of an individual block by GET."""
+    return blockchain.verify_block(block_index)
+
+
+@app.post("/api/v1/audit/simulate-block-tamper")
+def simulate_block_tamper(
+    req: SimulateBlockTamperRequest,
+    user_id: str = Depends(get_authorized_user)
+):
+    """For live demonstration: deliberately modify a block's field without updating its cryptographic hash."""
+    return blockchain.simulate_block_tampering(req.block_index, req.field, req.new_value)
+
+
+@app.post("/api/v1/audit/restore-block")
+def restore_block_endpoint(
+    req: RestoreBlockRequest,
+    user_id: str = Depends(get_authorized_user)
+):
+    """Restore a block's state after demonstration."""
+    blockchain.restore_block(req.block_index)
+    return {"success": True, "block_index": req.block_index, "message": "Block restored to authentic cryptographic state."}
+
+
 @app.post("/api/v1/audit/verify-evidence")
 def verify_evidence(
     req: VerifyEvidenceRequest,
     user_id: str = Depends(get_authorized_user)
 ):
     """
-    Verify whether the provided evidence text or SHA-256 hash matches
-    the authentic blockchain record at the specified block index.
+    Verify whether the provided evidence text matches the authentic blockchain record
+    at the specified block index by recalculating its SHA-256 hash strictly from the evidence content.
     """
     # Verification can be performed by authorized users (Doctors, Admins, Auditors)
     if not (
@@ -421,13 +507,62 @@ def verify_evidence(
             detail=f"User '{user_id}' is not authorized to verify evidence."
         )
 
+    stored = req.stored_hash or req.evidence_hash
     verification_result = blockchain.verify_evidence(
         block_index=req.block_index,
         evidence_text=req.evidence_text,
-        evidence_hash=req.evidence_hash
+        stored_hash=stored
     )
 
     return verification_result
+
+
+@app.post("/api/v1/audit/verify-integrity")
+def verify_integrity(
+    req: VerifyIntegrityRequest,
+    user_id: str = Depends(get_authorized_user)
+):
+    """
+    Recalculates SHA-256 on exactly the provided evidence content and compares with stored_hash.
+    Returns VERIFIED / NO TAMPERING when hashes match, or TAMPERING DETECTED when hashes differ.
+    """
+    return verify_evidence_integrity(
+        evidence=req.evidence_text,
+        stored_hash=req.stored_hash
+    )
+
+
+@app.post("/api/v1/audit/verify-query")
+def verify_query(
+    req: VerifyQueryRequest,
+    user_id: str = Depends(get_authorized_user)
+):
+    """
+    Retrieves stored evidence/hash for a query ID or block index and verifies current/modified evidence.
+    """
+    identifier = req.query_id if req.query_id is not None else req.block_index
+    if identifier is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either query_id or block_index must be specified."
+        )
+
+    return verify_query_evidence(
+        identifier=identifier,
+        current_evidence=req.current_evidence,
+        stored_hash_override=req.stored_hash
+    )
+
+
+@app.get("/api/v1/audit/verify-query/{identifier}")
+def verify_query_get(
+    identifier: str,
+    user_id: str = Depends(get_authorized_user)
+):
+    """
+    Quick GET verification for query ID or block index.
+    """
+    return verify_query_evidence(identifier=identifier)
 
 
 # ============================================================
