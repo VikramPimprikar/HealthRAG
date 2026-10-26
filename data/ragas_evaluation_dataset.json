@@ -1,0 +1,32 @@
+[
+  {
+    "id": "RAGAS_001",
+    "category": "Patient_Lookup",
+    "question": "What are the clinical findings, resting blood pressure, and cholesterol level for patient P1007?",
+    "reference_answer": "Patient P1007 (Priya Sharma, 57-year-old female) presents with asymptomatic chest pain, a resting blood pressure of 120.0 mmHg, a significantly elevated serum cholesterol level of 354.0 mg/dL, normal fasting blood sugar, normal resting ECG, maximum heart rate of 163.0 bpm, positive exercise-induced angina, an ST depression (oldpeak) of 0.6 with upsloping slope, and a diagnosis outcome of 0 (No CAD / Healthy)."
+  },
+  {
+    "id": "RAGAS_002",
+    "category": "Disease_Severity",
+    "question": "Which patients have severe coronary artery disease (outcome 3 or 4) with marked ST depression?",
+    "reference_answer": "Patients with severe to critical CAD include: Patient P1006 (62-year-old female, diagnosis outcome 3, oldpeak 3.6 downsloping, cholesterol 268.0 mg/dL), Patient P1023 (58-year-old male, diagnosis outcome 3, oldpeak 3.2, cholesterol 224.0 mg/dL), and Patient P1024 (60-year-old male, diagnosis outcome 4 - very severe CAD, oldpeak 2.4 flat slope, exercise-induced angina True, and LV hypertrophy)."
+  },
+  {
+    "id": "RAGAS_003",
+    "category": "Patient_Lookup",
+    "question": "What is the diagnosis outcome, chest pain type, and ECG result for patient P1001?",
+    "reference_answer": "Patient P1001 (Arjun Kulkarni, 67-year-old male) has asymptomatic chest pain, resting ECG showing left ventricular hypertrophy (LVH), resting blood pressure of 160.0 mmHg, serum cholesterol of 286.0 mg/dL, positive exercise-induced angina, maximum heart rate of 108.0 bpm, oldpeak of 1.5 with flat slope, and a diagnosis outcome of 2 (Moderate CAD)."
+  },
+  {
+    "id": "RAGAS_004",
+    "category": "Biomarker_Cohort",
+    "question": "Identify patients with hypercholesterolemia with serum cholesterol level exceeding 280 mg/dL and exercise-induced angina.",
+    "reference_answer": "Patients meeting both criteria are Patient P1001 (cholesterol 286.0 mg/dL, exercise induced angina True, diagnosis outcome 2) and Patient P1007 (cholesterol 354.0 mg/dL, exercise induced angina True, diagnosis outcome 0)."
+  },
+  {
+    "id": "RAGAS_005",
+    "category": "Patient_Lookup",
+    "question": "What are the clinical indicators and fasting blood sugar status for patient P1000?",
+    "reference_answer": "Patient P1000 (Aisha Joshi, 63-year-old male) presents with typical angina chest pain, resting blood pressure of 145.0 mmHg, cholesterol of 233.0 mg/dL, elevated fasting blood sugar (True, >120 mg/dL), resting ECG showing left ventricular hypertrophy, maximum heart rate 150.0 bpm, ST depression oldpeak 2.3 downsloping, and diagnosis outcome 0."
+  }
+]

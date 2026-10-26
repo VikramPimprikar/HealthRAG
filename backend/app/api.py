@@ -46,7 +46,10 @@ from app.blockchain.evidence_verifier import (
     canonicalize_evidence,
     compute_canonical_hash,
     verify_evidence_integrity,
-    verify_query_evidence
+    verify_query_evidence,
+    verify_evidence_against_baseline,
+    simulate_tampered_evidence,
+    get_baseline_hash
 )
 from app.rag.enhanced_rag_pipeline import get_rag_service
 from app.predict import predict_heart_disease
@@ -115,6 +118,16 @@ class VerifyEvidenceRequest(BaseModel):
 class VerifyIntegrityRequest(BaseModel):
     evidence_text: Any = Field(..., description="Evidence text, item, or bundle to recalculate and verify")
     stored_hash: str = Field(..., description="Original/recorded SHA-256 hash to compare against")
+
+
+class VerifyEvidenceIntegrityRequest(BaseModel):
+    evidence_id: str = Field(..., description="Evidence ID or Patient ID, e.g. P1651, KB_001")
+    evidence_text: Optional[str] = Field(None, description="Current or test copy evidence text to recalculate and verify")
+
+
+class SimulateEvidenceTamperRequest(BaseModel):
+    evidence_id: str = Field(..., description="Evidence ID or Patient ID, e.g. P1651, KB_001")
+    evidence_text: Optional[str] = Field(None, description="Optional current evidence text")
 
 
 class VerifyQueryRequest(BaseModel):
@@ -497,7 +510,7 @@ def verify_evidence(
     Verify whether the provided evidence text matches the authentic blockchain record
     at the specified block index by recalculating its SHA-256 hash strictly from the evidence content.
     """
-    # Verification can be performed by authorized users (Doctors, Admins, Auditors)
+    # Verification can be performed by authorized users (Doctors, Admins)
     if not (
         access_control_manager.check_permission(user_id, Permission.VIEW_AUDIT_LOGS) or
         access_control_manager.check_permission(user_id, Permission.QUERY_KNOWLEDGE_BASE)
@@ -517,6 +530,93 @@ def verify_evidence(
     return verification_result
 
 
+# ============================================================
+# MEDICAL EVIDENCE BASELINE INTEGRITY & TAMPERING DETECTION
+# ============================================================
+
+@app.post("/api/v1/evidence/verify-integrity")
+def verify_evidence_baseline_endpoint(
+    req: VerifyEvidenceIntegrityRequest,
+    user_id: str = Depends(get_authorized_user)
+):
+    """
+    SHA-256 evidence integrity verification against baseline hash.
+    Recalculates SHA-256 hash of medical evidence document/chunk and compares against baseline.
+    Returns:
+    - Status: 'Integrity Verified' when hashes match
+    - Status: 'Potential Tampering Detected' when they differ
+    Requires Doctor or Admin role.
+    """
+    if not (
+        access_control_manager.check_permission(user_id, Permission.QUERY_KNOWLEDGE_BASE) or
+        access_control_manager.check_permission(user_id, Permission.VIEW_AUDIT_LOGS)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: User '{user_id}' is not authorized to perform evidence integrity verification."
+        )
+
+    result = verify_evidence_against_baseline(
+        evidence_id=req.evidence_id,
+        current_evidence_text=req.evidence_text,
+        user_id=user_id
+    )
+    return result
+
+
+@app.post("/api/v1/evidence/simulate-tamper")
+def simulate_evidence_tamper_endpoint(
+    req: SimulateEvidenceTamperRequest,
+    user_id: str = Depends(get_authorized_user)
+):
+    """
+    Generates an in-memory tampered test copy of an evidence chunk for demonstration.
+    Does NOT modify the underlying medical dataset files on disk.
+    Requires Doctor or Admin role.
+    """
+    if not (
+        access_control_manager.check_permission(user_id, Permission.QUERY_KNOWLEDGE_BASE) or
+        access_control_manager.check_permission(user_id, Permission.VIEW_AUDIT_LOGS)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: User '{user_id}' is not authorized to simulate evidence tampering."
+        )
+
+    return simulate_tampered_evidence(
+        evidence_id=req.evidence_id,
+        current_text=req.evidence_text
+    )
+
+
+@app.get("/api/v1/evidence/baseline/{evidence_id}")
+def get_evidence_baseline_endpoint(
+    evidence_id: str,
+    user_id: str = Depends(get_authorized_user)
+):
+    """Retrieve baseline SHA-256 hash for an evidence ID (stored separately from editable content)"""
+    if not (
+        access_control_manager.check_permission(user_id, Permission.QUERY_KNOWLEDGE_BASE) or
+        access_control_manager.check_permission(user_id, Permission.VIEW_AUDIT_LOGS)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: User '{user_id}' is not authorized to view evidence baseline."
+        )
+
+    hash_val = get_baseline_hash(evidence_id)
+    if not hash_val:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Baseline hash not found for evidence ID '{evidence_id}'."
+        )
+
+    return {
+        "evidence_id": evidence_id.strip().upper(),
+        "baseline_hash": hash_val
+    }
+
+
 @app.post("/api/v1/audit/verify-integrity")
 def verify_integrity(
     req: VerifyIntegrityRequest,
@@ -526,6 +626,15 @@ def verify_integrity(
     Recalculates SHA-256 on exactly the provided evidence content and compares with stored_hash.
     Returns VERIFIED / NO TAMPERING when hashes match, or TAMPERING DETECTED when hashes differ.
     """
+    if not (
+        access_control_manager.check_permission(user_id, Permission.VIEW_AUDIT_LOGS) or
+        access_control_manager.check_permission(user_id, Permission.QUERY_KNOWLEDGE_BASE)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"User '{user_id}' is not authorized to verify integrity."
+        )
+
     return verify_evidence_integrity(
         evidence=req.evidence_text,
         stored_hash=req.stored_hash

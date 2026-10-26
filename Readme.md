@@ -75,7 +75,6 @@ RAGChainMed/
 | **Admin** | `admin` | All permissions | Full access: RAG queries, ML predictions, Audit logs, User management |
 | **Doctor** | `DOC001`, `D101` | Query Knowledge Base, Request Prediction, View Patient Data, Edit Patient Data | Perform RAG medical queries & run ML risk assessments |
 | **Nurse** | `NURSE001` | View Patient Data, Edit Patient Data | View patient records (RAG queries & ML predictions restricted) |
-| **Auditor** | `AUDITOR001` | View Audit Logs | Inspect blockchain blocks & verify cryptographic integrity |
 | **Patient** | `PATIENT001` | View Patient Data | View own medical records |
 
 ---
@@ -223,7 +222,7 @@ ALL 10 END-TO-END TESTS COMPLETED AND PASSED SUCCESSFULLY!
    - Enter a Block Index and Evidence SHA-256 Hash (or raw text).
    - Click **"Verify Against Blockchain"** to confirm authenticity, or click **"Simulate Tampered Data"** to observe real-time tamper detection.
 5. **Role Switcher (Top Navigation Bar)**:
-   - Switch between **Admin**, **DOC001 (Doctor)**, **NURSE001 (Nurse)**, **AUDITOR001 (Auditor)**, or **Unauthorized User** to experience RBAC permissions and access denials live.
+   - Switch between **Admin**, **DOC001 (Doctor)**, **NURSE001 (Nurse)**, or **Unauthorized User** to experience RBAC permissions and access denials live.
 
 ---
 

@@ -115,14 +115,6 @@ def build_default_users() -> Dict[str, User]:
             }
         ),
         User(
-            user_id="AUDITOR001",
-            name="Auditor",
-            role=UserRole.AUDITOR,
-            permissions={
-                Permission.VIEW_AUDIT_LOGS
-            }
-        ),
-        User(
             user_id="PATIENT001",
             name="Patient",
             role=UserRole.PATIENT,

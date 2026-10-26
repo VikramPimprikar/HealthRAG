@@ -306,3 +306,401 @@ def verify_query_evidence(
     }
 
     return result
+
+
+# ============================================================
+# BASELINE HASH REPOSITORY & EVIDENCE INTEGRITY VERIFICATION
+# ============================================================
+
+import datetime
+import re
+from pathlib import Path
+
+_baseline_cache: Optional[Dict[str, Any]] = None
+
+
+def get_data_dir() -> Path:
+    """Resolve data directory containing medical narratives and baseline hashes"""
+    possible = [
+        Path(__file__).resolve().parent.parent.parent.parent / "data",
+        Path(__file__).resolve().parent.parent.parent / "data",
+        Path.cwd() / "data",
+        Path.cwd().parent / "data"
+    ]
+    for p in possible:
+        if p.exists() and p.is_dir():
+            return p
+    fallback = Path(__file__).resolve().parent.parent.parent.parent / "data"
+    fallback.mkdir(parents=True, exist_ok=True)
+    return fallback
+
+
+def get_baseline_hash_file() -> Path:
+    """Return path to baseline hash storage file (separate from editable evidence)"""
+    return get_data_dir() / "evidence_baseline_hashes.json"
+
+
+def save_baseline_hashes(store: Dict[str, Any]) -> None:
+    """Persist baseline hashes separately to disk"""
+    global _baseline_cache
+    _baseline_cache = store
+    target = get_baseline_hash_file()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with open(target, "w", encoding="utf-8") as f:
+        json.dump(store, f, indent=2)
+
+
+def initialize_baseline_hashes(force: bool = False) -> Dict[str, Any]:
+    """
+    Generate and store a baseline SHA-256 hash when evidence is first registered or ingested.
+    The baseline hashes are stored separately from editable evidence content.
+    If baseline hashes already exist on disk, force=False prevents accidental overwriting.
+    """
+    global _baseline_cache
+    baseline_path = get_baseline_hash_file()
+
+    if baseline_path.exists() and not force:
+        try:
+            with open(baseline_path, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+                if loaded and isinstance(loaded, dict):
+                    _baseline_cache = loaded
+                    return loaded
+        except Exception as e:
+            print(f"Warning: Failed to read existing baseline hashes: {e}")
+
+    store: Dict[str, Any] = {}
+    data_dir = get_data_dir()
+    now_iso = datetime.datetime.now().isoformat()
+
+    # 1. Register Clinical Patient Narratives
+    narratives_path = data_dir / "heart_narratives.json"
+    if narratives_path.exists():
+        try:
+            with open(narratives_path, "r", encoding="utf-8") as f:
+                narratives = json.load(f)
+            for idx, item in enumerate(narratives):
+                p_id = str(item.get("id", f"P{idx}")).strip().upper()
+                text = item.get("text", "")
+                h = compute_canonical_hash(text)
+                store[p_id] = {
+                    "evidence_id": p_id,
+                    "baseline_hash": h,
+                    "doc_type": "patient_record",
+                    "registered_at": now_iso
+                }
+        except Exception as e:
+            print(f"Error reading narratives for baseline hashing: {e}")
+
+    # 2. Register Medical Reference Knowledge Base Articles
+    kb_path = data_dir / "medical_knowledge.json"
+    if kb_path.exists():
+        try:
+            with open(kb_path, "r", encoding="utf-8") as f:
+                kb_data = json.load(f)
+            for idx, item in enumerate(kb_data):
+                kb_id = str(item.get("id", f"KB_{idx+1:03d}")).strip().upper()
+                # Document in FAISS combines title and text: f"{title}: {text}"
+                full_text = f"{item.get('title', '')}: {item.get('text', '')}" if item.get("title") else item.get("text", "")
+                h = compute_canonical_hash(full_text)
+                store[kb_id] = {
+                    "evidence_id": kb_id,
+                    "baseline_hash": h,
+                    "doc_type": "medical_knowledge",
+                    "title": item.get("title", ""),
+                    "registered_at": now_iso
+                }
+        except Exception as e:
+            print(f"Error reading medical knowledge for baseline hashing: {e}")
+
+    save_baseline_hashes(store)
+    return store
+
+
+def load_baseline_hashes(force_reload: bool = False) -> Dict[str, Any]:
+    """Load baseline hashes from separate store, initializing on first access if needed"""
+    global _baseline_cache
+    if _baseline_cache is not None and not force_reload:
+        return _baseline_cache
+
+    baseline_path = get_baseline_hash_file()
+    if baseline_path.exists():
+        try:
+            with open(baseline_path, "r", encoding="utf-8") as f:
+                _baseline_cache = json.load(f)
+                return _baseline_cache
+        except Exception:
+            pass
+
+    _baseline_cache = initialize_baseline_hashes(force=False)
+    return _baseline_cache
+
+
+def get_baseline_hash(evidence_id: str) -> Optional[str]:
+    """Retrieve stored baseline SHA-256 hash for an evidence ID"""
+    if not evidence_id:
+        return None
+    store = load_baseline_hashes()
+    clean_id = evidence_id.strip().upper()
+    entry = store.get(clean_id) or store.get(evidence_id.strip())
+    if isinstance(entry, dict):
+        return entry.get("baseline_hash")
+    elif isinstance(entry, str):
+        return entry
+    return None
+
+
+def register_evidence_baseline(
+    evidence_id: str,
+    text: str,
+    doc_type: str = "patient_record",
+    force_overwrite: bool = False
+) -> Dict[str, Any]:
+    """
+    Register evidence content and compute baseline hash.
+    Preserves existing baseline hash from silent overwrites unless force_overwrite=True.
+    """
+    if not evidence_id or not evidence_id.strip():
+        raise ValueError("Evidence ID cannot be empty.")
+    if not text or not str(text).strip():
+        raise ValueError("Evidence text cannot be empty.")
+
+    clean_id = evidence_id.strip().upper()
+    store = load_baseline_hashes()
+
+    # Guard: prevent normal editing flow from overwriting registered baseline hash
+    if clean_id in store and not force_overwrite:
+        return {
+            "status": "existing",
+            "evidence_id": clean_id,
+            "baseline_hash": store[clean_id]["baseline_hash"],
+            "overwritten": False,
+            "message": f"Baseline hash for '{clean_id}' already exists and was preserved."
+        }
+
+    new_hash = compute_canonical_hash(text)
+    store[clean_id] = {
+        "evidence_id": clean_id,
+        "baseline_hash": new_hash,
+        "doc_type": doc_type,
+        "registered_at": datetime.datetime.now().isoformat()
+    }
+    save_baseline_hashes(store)
+    return {
+        "status": "registered",
+        "evidence_id": clean_id,
+        "baseline_hash": new_hash,
+        "overwritten": force_overwrite,
+        "message": f"Baseline hash for '{clean_id}' registered successfully."
+    }
+
+
+def get_evidence_text_from_dataset(evidence_id: str) -> Optional[str]:
+    """Look up original evidence text from active clinical dataset"""
+    if not evidence_id:
+        return None
+    clean_id = evidence_id.strip().upper()
+    data_dir = get_data_dir()
+
+    # 1. Patient Narratives
+    narratives_path = data_dir / "heart_narratives.json"
+    if narratives_path.exists():
+        try:
+            with open(narratives_path, "r", encoding="utf-8") as f:
+                for item in json.load(f):
+                    if str(item.get("id", "")).strip().upper() == clean_id:
+                        return item.get("text", "")
+        except Exception:
+            pass
+
+    # 2. Medical Knowledge
+    kb_path = data_dir / "medical_knowledge.json"
+    if kb_path.exists():
+        try:
+            with open(kb_path, "r", encoding="utf-8") as f:
+                for item in json.load(f):
+                    if str(item.get("id", "")).strip().upper() == clean_id:
+                        title = item.get("title", "")
+                        text = item.get("text", "")
+                        return f"{title}: {text}" if title else text
+        except Exception:
+            pass
+
+    return None
+
+
+def verify_evidence_against_baseline(
+    evidence_id: str,
+    current_evidence_text: Optional[str] = None,
+    user_id: str = "admin"
+) -> Dict[str, Any]:
+    """
+    Recalculates SHA-256 hash on evidence text and compares with stored baseline.
+    Returns:
+    - Status: 'Integrity Verified' when hashes match
+    - Status: 'Potential Tampering Detected' when they differ
+    Handles missing evidence, missing baseline hashes, and verification errors explicitly.
+    Logs result to audit trail without unnecessary sensitive medical details.
+    """
+    clean_id = (evidence_id or "").strip().upper()
+    now_iso = datetime.datetime.now().isoformat()
+
+    # Handle missing evidence ID explicitly
+    if not clean_id:
+        return {
+            "status": "Error",
+            "verified": False,
+            "tamper_detected": False,
+            "error_type": "MISSING_EVIDENCE_ID",
+            "message": "Verification error: Evidence ID must be provided.",
+            "evidence_id": "",
+            "baseline_hash": None,
+            "recalculated_hash": None,
+            "timestamp": now_iso
+        }
+
+    # Handle missing baseline hash explicitly
+    baseline = get_baseline_hash(clean_id)
+    if not baseline:
+        return {
+            "status": "Error",
+            "verified": False,
+            "tamper_detected": False,
+            "error_type": "MISSING_BASELINE_HASH",
+            "message": f"Verification error: Missing baseline hash for evidence ID '{clean_id}'.",
+            "evidence_id": clean_id,
+            "baseline_hash": None,
+            "recalculated_hash": None,
+            "timestamp": now_iso
+        }
+
+    # Resolve target evidence text
+    target_text = current_evidence_text
+    if target_text is None:
+        target_text = get_evidence_text_from_dataset(clean_id)
+
+    # Handle missing evidence content explicitly
+    if target_text is None:
+        return {
+            "status": "Error",
+            "verified": False,
+            "tamper_detected": False,
+            "error_type": "MISSING_EVIDENCE",
+            "message": f"Verification error: Evidence content not found for ID '{clean_id}'.",
+            "evidence_id": clean_id,
+            "baseline_hash": baseline,
+            "recalculated_hash": None,
+            "timestamp": now_iso
+        }
+
+    if not str(target_text).strip():
+        return {
+            "status": "Error",
+            "verified": False,
+            "tamper_detected": True,
+            "error_type": "EMPTY_EVIDENCE",
+            "message": f"Verification error: Evidence content for '{clean_id}' is empty.",
+            "evidence_id": clean_id,
+            "baseline_hash": baseline,
+            "recalculated_hash": "",
+            "timestamp": now_iso
+        }
+
+    # Recalculate SHA-256 on current evidence text
+    recalculated_hash = compute_canonical_hash(target_text)
+    matches = (recalculated_hash.lower() == baseline.lower())
+
+    status_str = "Integrity Verified" if matches else "Potential Tampering Detected"
+    verified = matches
+    tamper_detected = not matches
+    msg = (
+        f"Evidence '{clean_id}' integrity verified against baseline hash."
+        if matches
+        else f"Potential tampering detected in evidence '{clean_id}': recalculated SHA-256 does not match baseline hash."
+    )
+
+    # Log integrity check result to audit trail (avoid logging sensitive medical text)
+    try:
+        from app.blockchain.audit_log import audit_logger
+        audit_logger.add_record(
+            user_id=user_id,
+            action="EVIDENCE_INTEGRITY_CHECK",
+            data_type="Evidence Document Integrity",
+            details={
+                "evidence_id": clean_id,
+                "status": status_str,
+                "verified": verified,
+                "tamper_detected": tamper_detected,
+                "baseline_hash": f"{baseline[:16]}..." if baseline else "",
+                "recalculated_hash": f"{recalculated_hash[:16]}..." if recalculated_hash else "",
+            },
+            patient_id=clean_id if clean_id.startswith("P") else None,
+            status="success" if verified else "tamper_detected",
+            query_text=f"Integrity check for evidence ID {clean_id}"
+        )
+    except Exception as log_err:
+        print(f"Warning: Could not record integrity check in audit logger: {log_err}")
+
+    return {
+        "status": status_str,
+        "verified": verified,
+        "tamper_detected": tamper_detected,
+        "evidence_id": clean_id,
+        "baseline_hash": baseline,
+        "recalculated_hash": recalculated_hash,
+        "message": msg,
+        "timestamp": now_iso
+    }
+
+
+def simulate_tampered_evidence(
+    evidence_id: str,
+    current_text: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Creates an in-memory tampered test copy of an evidence document for demonstration.
+    Does NOT modify the underlying medical dataset files on disk.
+    """
+    clean_id = (evidence_id or "").strip().upper()
+    text = current_text if current_text is not None else get_evidence_text_from_dataset(clean_id)
+    if not text:
+        text = f"Patient ID {clean_id}: Age 58, Resting BP 140.0 mmHg, Cholesterol 240.0 mg/dL."
+
+    baseline = get_baseline_hash(clean_id)
+
+    # Modify clinical biomarker values in the test copy
+    tampered = text
+    if "resting blood pressure" in tampered.lower():
+        tampered = re.sub(
+            r"resting blood pressure\s*[\d\.]+",
+            "resting blood pressure 195.0",
+            tampered,
+            flags=re.IGNORECASE
+        )
+    elif "cholesterol level" in tampered.lower():
+        tampered = re.sub(
+            r"cholesterol level\s*[\d\.]+",
+            "cholesterol level 390.0",
+            tampered,
+            flags=re.IGNORECASE
+        )
+    elif "symptoms" in tampered.lower():
+        tampered = tampered.replace("Common symptoms", "Unusual tampered symptoms (altered for demonstration)")
+    else:
+        tampered = tampered + " [ALTERED_TEST_COPY]"
+
+    if "[ALTERED TEST COPY]" not in tampered:
+        tampered = tampered.rstrip() + " [ALTERED TEST COPY: FOR INTEGRITY DEMO]"
+
+    tampered_hash = compute_canonical_hash(tampered)
+
+    return {
+        "evidence_id": clean_id,
+        "original_text": text,
+        "tampered_text": tampered,
+        "baseline_hash": baseline,
+        "tampered_hash": tampered_hash,
+        "simulated": True,
+        "message": "Simulated tampering copy created for demonstration (original dataset untouched)."
+    }
+

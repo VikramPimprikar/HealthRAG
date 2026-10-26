@@ -82,6 +82,17 @@ def build_vectorstore(model_name: str, output_dir: Path):
     vectorstore.save_local(str(output_dir))
     print(f"[SUCCESS] FAISS Vectorstore saved to: {output_dir}")
     print(f"Total vectors stored: {vectorstore.index.ntotal} (Dimension: {vectorstore.index.d})")
+
+    # Ingest and store baseline SHA-256 hashes separately for all evidence records
+    try:
+        import sys
+        sys.path.append(str(BASE_DIR / "backend"))
+        from app.blockchain.evidence_verifier import initialize_baseline_hashes
+        baseline_store = initialize_baseline_hashes(force=False)
+        print(f"[SUCCESS] Stored {len(baseline_store)} evidence baseline SHA-256 hashes separately in data/evidence_baseline_hashes.json")
+    except Exception as e:
+        print(f"[WARN] Baseline hashing during ingestion: {e}")
+
     return vectorstore
 
 
