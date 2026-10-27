@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
 import Home from "./pages/Home";
 import ClinicalPrediction from "./pages/ClinicalPrediction";
 import AuditDashboard from "./pages/AuditDashboard";
+import EvidenceVerifier from "./pages/EvidenceVerifier";
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -162,6 +163,26 @@ function App() {
             >
               ⛓️ Blockchain Audit Trail
             </NavLink>
+
+            <NavLink
+              to="/verify"
+              className={({ isActive }) =>
+                `nav-link ${isActive ? "active" : ""}`
+              }
+              style={({ isActive }) => ({
+                padding: "8px 14px",
+                borderRadius: "8px",
+                textDecoration: "none",
+                fontSize: "13px",
+                fontWeight: "500",
+                color: isActive ? "#fff" : "var(--text-secondary)",
+                background: isActive ? "rgba(99, 102, 241, 0.2)" : "transparent",
+                border: isActive ? "1px solid rgba(99, 102, 241, 0.4)" : "1px solid transparent",
+                transition: "all 0.2s"
+              })}
+            >
+              🛡️ Evidence Verifier
+            </NavLink>
           </nav>
 
           {/* RBAC Role Switcher & System Status */}
@@ -300,6 +321,7 @@ function App() {
             <Route path="/" element={<Home activeUser={currentUser} apiBase={API_BASE} />} />
             <Route path="/predict" element={<ClinicalPrediction activeUser={currentUser} apiBase={API_BASE} />} />
             <Route path="/audit" element={<AuditDashboard activeUser={currentUser} apiBase={API_BASE} />} />
+            <Route path="/verify" element={<EvidenceVerifier activeUser={currentUser} apiBase={API_BASE} />} />
           </Routes>
         </main>
 

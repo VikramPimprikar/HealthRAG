@@ -91,7 +91,8 @@ def build_default_users() -> Dict[str, User]:
                 Permission.VIEW_PATIENT_DATA,
                 Permission.EDIT_PATIENT_DATA,
                 Permission.REQUEST_PREDICTION,
-                Permission.QUERY_KNOWLEDGE_BASE
+                Permission.QUERY_KNOWLEDGE_BASE,
+                Permission.VIEW_AUDIT_LOGS
             }
         ),
         User(
@@ -102,7 +103,8 @@ def build_default_users() -> Dict[str, User]:
                 Permission.VIEW_PATIENT_DATA,
                 Permission.EDIT_PATIENT_DATA,
                 Permission.REQUEST_PREDICTION,
-                Permission.QUERY_KNOWLEDGE_BASE
+                Permission.QUERY_KNOWLEDGE_BASE,
+                Permission.VIEW_AUDIT_LOGS
             }
         ),
         User(
@@ -111,7 +113,9 @@ def build_default_users() -> Dict[str, User]:
             role=UserRole.NURSE,
             permissions={
                 Permission.VIEW_PATIENT_DATA,
-                Permission.EDIT_PATIENT_DATA
+                Permission.EDIT_PATIENT_DATA,
+                Permission.QUERY_KNOWLEDGE_BASE,
+                Permission.VIEW_AUDIT_LOGS
             }
         ),
         User(
