@@ -41,7 +41,9 @@ sentence-transformers>=2.2.0 # Embeddings model
 # LLM & NLP
 # ------------------------------------------------------------
 openai>=1.0.0              # OpenAI API client
+groq>=0.9.0                # Groq chat completion API
 python-dotenv>=1.0.0       # Load environment variables from .env
+ragas==0.4.3               # RAG evaluation metrics
 
 # Blockchain & Security
 # ------------------------------------------------------------

@@ -1,0 +1,159 @@
+{
+  "dataset": "data\\ragas_evaluation_dataset.json",
+  "cache": "data\\evaluation_results.json",
+  "embedding_model": "pritamdeka/S-PubMedBert-MS-MARCO",
+  "llm_provider": "Groq (configured RAGAS adapter)",
+  "refresh": false,
+  "top_k": 5,
+  "samples": [
+    {
+      "id": "RAGAS_001",
+      "category": "Patient_Lookup",
+      "question": "What are the clinical findings, resting blood pressure, and cholesterol level for patient P1007?",
+      "reference_answer": "Patient P1007 (Priya Sharma, 57-year-old female) presents with asymptomatic chest pain, a resting blood pressure of 120.0 mmHg, a significantly elevated serum cholesterol level of 354.0 mg/dL, normal fasting blood sugar, normal resting ECG, maximum heart rate of 163.0 bpm, positive exercise-induced angina, an ST depression (oldpeak) of 0.6 with upsloping slope, and a diagnosis outcome of 0 (No CAD / Healthy).",
+      "retrieved_contexts": [
+        "Patient ID P1007, Name Priya Sharma, aged 57 years with sex value Female, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 354.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 163.0, exercise induced angina True, oldpeak value 0.6, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+        "Patient ID P1095, Name Priya Verma, aged 52 years with sex value Male, chest pain type asymptomatic, resting blood pressure 128.0 mmHg, cholesterol level 255.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 161.0, exercise induced angina True, oldpeak value 0.0, slope value upsloping, ca value 1.0, thal value reversable defect, and diagnosis outcome 1.",
+        "Patient ID P1097, Name Krishna Kulkarni, aged 60 years with sex value Female, chest pain type asymptomatic, resting blood pressure 150.0 mmHg, cholesterol level 258.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 157.0, exercise induced angina False, oldpeak value 2.6, slope value flat, ca value 2.0, thal value reversable defect, and diagnosis outcome 3.",
+        "Patient ID P1081, Name Neha Verma, aged 53 years with sex value Female, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 264.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 143.0, exercise induced angina False, oldpeak value 0.4, slope value flat, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+        "Patient ID P1044, Name Neha Kapoor, aged 61 years with sex value Female, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 330.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 169.0, exercise induced angina False, oldpeak value 0.0, slope value upsloping, ca value 0.0, thal value normal, and diagnosis outcome 1."
+      ],
+      "generated_answer": "**Patient P1007 (Priya Sharma, 57 y, Female)**  \n\n| Clinical finding | Value |\n|------------------|-------|\n| **Chest‑pain type** | Asymptomatic (Type 4) |\n| **Resting blood pressure** | **120 mm Hg** |\n| **Serum cholesterol** | **354 mg/dL** |\n| **Fasting blood‑sugar** | Normal (≤120 mg/dL) |\n| **Resting ECG** | Normal |\n| **Maximum heart rate (exercise)** | 163 bpm |\n| **Exercise‑induced angina** | Present |\n| **ST‑depression (oldpeak)** | 0.6 mm |\n| **Slope of ST segment** | Upsloping |\n| **Diagnosis** | Healthy / No coronary artery disease (CAD) |\n\nThese values are taken directly from the verified patient record for P1007.",
+      "source": "cached_evaluation_results",
+      "retrieval_generation_time_sec": 0.0,
+      "evaluation_time_sec": 401.071,
+      "scores": {
+        "context_precision": 0.9999999999,
+        "context_recall": null,
+        "faithfulness": null,
+        "answer_relevancy": 0.9713549481952465
+      },
+      "errors": [
+        "context_recall evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}",
+        "faithfulness evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+      ]
+    },
+    {
+      "id": "RAGAS_002",
+      "category": "Disease_Severity",
+      "question": "Which patients have severe coronary artery disease (outcome 3 or 4) with marked ST depression?",
+      "reference_answer": "Patients with severe to critical CAD include: Patient P1006 (62-year-old female, diagnosis outcome 3, oldpeak 3.6 downsloping, cholesterol 268.0 mg/dL), Patient P1023 (58-year-old male, diagnosis outcome 3, oldpeak 3.2, cholesterol 224.0 mg/dL), and Patient P1024 (60-year-old male, diagnosis outcome 4 - very severe CAD, oldpeak 2.4 flat slope, exercise-induced angina True, and LV hypertrophy).",
+      "retrieved_contexts": [
+        "Mechanisms and Clinical Significance of ST-Segment Depression: ST-segment depression (measured as the 'oldpeak' value in millimeters on ECG during exercise stress testing) is an electrocardiographic indicator of subendocardial myocardial ischemia. During cardiac stress or exercise, myocardial oxygen demand increases. When stenosed coronary arteries cannot supply adequate blood flow, the subendocardium becomes ischemic, altering the electrical potential during ventricular repolarization. Significant ST depression is defined as horizontal or downsloping displacement >= 1.0 mm (0.1 mV) occurring 60 to 80 ms after the J-point. Downsloping ST depression indicates severe multi-vessel CAD and high cardiovascular risk, whereas flat ST depression indicates moderate ischemia, and upsloping ST depression may represent milder ischemia or rapid tachycardia.",
+        "Symptoms of Heart Disease and Coronary Artery Disease: Common symptoms of coronary artery disease (CAD) and heart disease include chest pain or discomfort (angina pectoris), pressure, tightness, or squeezing sensations in the chest or arms that may radiate to the neck, jaw, shoulder, or back. Additional symptoms include shortness of breath (dyspnea) during exertion or rest, unexplained fatigue, lightheadedness, dizziness, palpitations, cold sweats, and swelling in the legs, ankles, or feet (edema). In some patients, especially women and elderly individuals, symptoms may be atypical, presenting as nausea, indigestion, epigastric discomfort, or silent ischemia without classic chest pain.",
+        "Patient ID P1596, Name Sai Pimprikar, aged 65 years with sex value Male, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 275.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 115.0, exercise induced angina True, oldpeak value 1.0, slope value flat, ca value nan, thal value nan, and diagnosis outcome 1.",
+        "Patient ID P1676, Name Sai Joshi, aged 60 years with sex value Male, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 0.0 mg/dL, fasting blood sugar nan, rest ECG result st-t abnormality, maximum heart rate 130.0, exercise induced angina True, oldpeak value 1.1, slope value downsloping, ca value 1.0, thal value nan, and diagnosis outcome 1.",
+        "Patient ID P1593, Name Aditya Pimprikar, aged 54 years with sex value Female, chest pain type non-anginal, resting blood pressure 130.0 mmHg, cholesterol level 294.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 100.0, exercise induced angina True, oldpeak value 0.0, slope value flat, ca value nan, thal value nan, and diagnosis outcome 1."
+      ],
+      "generated_answer": "Based on the verified patient records provided, none of the listed patients meet the criteria of **severe coronary artery disease (diagnostic outcome 3 or 4)** combined with **marked ST‑segment depression**:\n\n| Patient ID | Diagnosis (CAD class) | ST‑depression (oldpeak) | Slope |\n|------------|-----------------------|------------------------|-------|\n| **P1596**  | Mild CAD (Class 1)    | 1.0 mm (flat)          | flat |\n| **P1676**  | Mild CAD (Class 1)    | 1.1 mm (downsloping)   | downsloping |\n| **P1593**  | Mild CAD (Class 1)    | 0.0 mm (flat)          | flat |\n\nAll three patients are classified as **Mild CAD (Class 1)**, not as severe disease (outcome 3 or 4). Therefore, there are **no patients in the current dataset** who have severe CAD with marked ST‑segment depression.",
+      "source": "cached_evaluation_results",
+      "retrieval_generation_time_sec": 0.0,
+      "evaluation_time_sec": 401.071,
+      "scores": {
+        "context_precision": 0.0,
+        "context_recall": null,
+        "faithfulness": null,
+        "answer_relevancy": 0.9794333261404292
+      },
+      "errors": [
+        "context_recall evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid document'}}",
+        "faithfulness evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+      ]
+    },
+    {
+      "id": "RAGAS_003",
+      "category": "Patient_Lookup",
+      "question": "What is the diagnosis outcome, chest pain type, and ECG result for patient P1001?",
+      "reference_answer": "Patient P1001 (Arjun Kulkarni, 67-year-old male) has asymptomatic chest pain, resting ECG showing left ventricular hypertrophy (LVH), resting blood pressure of 160.0 mmHg, serum cholesterol of 286.0 mg/dL, positive exercise-induced angina, maximum heart rate of 108.0 bpm, oldpeak of 1.5 with flat slope, and a diagnosis outcome of 2 (Moderate CAD).",
+      "retrieved_contexts": [
+        "Patient ID P1080, Name Aditya Joshi, aged 45 years with sex value Male, chest pain type asymptomatic, resting blood pressure 104.0 mmHg, cholesterol level 208.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 148.0, exercise induced angina True, oldpeak value 3.0, slope value flat, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+        "Patient ID P1083, Name Aditya Joshi, aged 68 years with sex value Male, chest pain type non-anginal, resting blood pressure 180.0 mmHg, cholesterol level 274.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 150.0, exercise induced angina True, oldpeak value 1.6, slope value flat, ca value 0.0, thal value reversable defect, and diagnosis outcome 3.",
+        "Patient ID P1048, Name Ananya Joshi, aged 65 years with sex value Female, chest pain type non-anginal, resting blood pressure 140.0 mmHg, cholesterol level 417.0 mg/dL, fasting blood sugar True, rest ECG result lv hypertrophy, maximum heart rate 157.0, exercise induced angina False, oldpeak value 0.8, slope value upsloping, ca value 1.0, thal value normal, and diagnosis outcome 0.",
+        "Patient ID P1081, Name Neha Verma, aged 53 years with sex value Female, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 264.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 143.0, exercise induced angina False, oldpeak value 0.4, slope value flat, ca value 0.0, thal value normal, and diagnosis outcome 0.",
+        "Patient ID P1008, Name Sneha Sharma, aged 63 years with sex value Male, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 254.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 147.0, exercise induced angina False, oldpeak value 1.4, slope value flat, ca value 1.0, thal value reversable defect, and diagnosis outcome 2."
+      ],
+      "generated_answer": "I could not find sufficient information in the available medical knowledge base to answer this question.",
+      "source": "cached_evaluation_results",
+      "retrieval_generation_time_sec": 0.0,
+      "evaluation_time_sec": 401.071,
+      "scores": {
+        "context_precision": null,
+        "context_recall": null,
+        "faithfulness": null,
+        "answer_relevancy": null
+      },
+      "errors": [
+        "context_precision evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid document'}}",
+        "context_recall evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}",
+        "faithfulness evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid document'}}",
+        "answer_relevancy evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+      ]
+    },
+    {
+      "id": "RAGAS_004",
+      "category": "Biomarker_Cohort",
+      "question": "Identify patients with hypercholesterolemia with serum cholesterol level exceeding 280 mg/dL and exercise-induced angina.",
+      "reference_answer": "Patients meeting both criteria are Patient P1001 (cholesterol 286.0 mg/dL, exercise induced angina True, diagnosis outcome 2) and Patient P1007 (cholesterol 354.0 mg/dL, exercise induced angina True, diagnosis outcome 0).",
+      "retrieved_contexts": [
+        "Causes and Pathophysiology of High Cholesterol (Hypercholesterolemia): High serum cholesterol (hypercholesterolemia, typically defined as total cholesterol > 200 mg/dL or LDL > 130 mg/dL, with severe hypercholesterolemia exceeding 240-280 mg/dL) is caused by a combination of genetic factors (such as familial hypercholesterolemia and LDL receptor mutations) and lifestyle factors. Major lifestyle causes include diets rich in saturated and trans fats, physical inactivity, obesity, and smoking. Secondary medical causes include type 2 diabetes mellitus, hypothyroidism, chronic kidney disease, and cholestatic liver disease. Elevated low-density lipoprotein (LDL) particles infiltrate arterial endothelial walls, undergoing oxidative modification and promoting foam cell formation, atheromatous plaque development, and coronary artery narrowing.",
+        "Exercise-Induced Angina and Myocardial Ischemia Pathophysiology: Exercise-induced angina (exang) occurs when physical exertion increases heart rate, systolic blood pressure, and left ventricular contractility, sharply escalating myocardial oxygen consumption. In patients with fixed atherosclerotic coronary stenoses, coronary vascular reserve is exhausted, preventing compensatory vasodilation. The resulting supply-demand mismatch causes acute transient subendocardial ischemia, lactic acidosis, and activation of cardiac nociceptive fibers perceived as angina pectoris. The presence of exercise-induced angina strongly correlates with obstructive coronary artery disease.",
+        "Symptoms of Heart Disease and Coronary Artery Disease: Common symptoms of coronary artery disease (CAD) and heart disease include chest pain or discomfort (angina pectoris), pressure, tightness, or squeezing sensations in the chest or arms that may radiate to the neck, jaw, shoulder, or back. Additional symptoms include shortness of breath (dyspnea) during exertion or rest, unexplained fatigue, lightheadedness, dizziness, palpitations, cold sweats, and swelling in the legs, ankles, or feet (edema). In some patients, especially women and elderly individuals, symptoms may be atypical, presenting as nausea, indigestion, epigastric discomfort, or silent ischemia without classic chest pain.",
+        "Cardiovascular Disease Risk Factors and Prevention: Major non-modifiable risk factors for cardiovascular disease include advancing age (especially men > 45 and women > 55), male biological sex, and family history of premature coronary heart disease. Modifiable risk factors include systemic hypertension (resting blood pressure > 130/80 mmHg), hyperlipidemia (elevated total cholesterol and LDL, low HDL), cigarette smoking, insulin resistance and diabetes mellitus (fasting blood sugar > 120 mg/dL), obesity (elevated BMI), sedentary lifestyle, chronic psychological stress, and unhealthy diet. Managing blood pressure, lowering LDL cholesterol, controlling blood glucose, exercising regularly, and smoking cessation substantially reduce cardiovascular morbidity.",
+        "Impact of Elevated Fasting Blood Sugar and Diabetes on Coronary Vasculature: Fasting blood sugar (fbs) exceeding 120 mg/dL indicates impaired fasting glucose or overt diabetes mellitus. Chronic hyperglycemia accelerates non-enzymatic glycation of arterial proteins, stimulates reactive oxygen species (ROS), induces endothelial nitric oxide synthase dysfunction, and promotes systemic low-grade vascular inflammation. Diabetic patients with coronary artery disease frequently suffer from diffuse multi-vessel involvement, higher incidence of silent myocardial infarction due to autonomic neuropathy, and poorer post-revascularization outcomes."
+      ],
+      "generated_answer": "I could not find sufficient information in the available medical knowledge base to answer this question.",
+      "source": "cached_evaluation_results",
+      "retrieval_generation_time_sec": 0.0,
+      "evaluation_time_sec": 401.071,
+      "scores": {
+        "context_precision": null,
+        "context_recall": null,
+        "faithfulness": null,
+        "answer_relevancy": null
+      },
+      "errors": [
+        "context_precision evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid document'}}",
+        "context_recall evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}",
+        "faithfulness evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}",
+        "answer_relevancy evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+      ]
+    },
+    {
+      "id": "RAGAS_005",
+      "category": "Patient_Lookup",
+      "question": "What are the clinical indicators and fasting blood sugar status for patient P1000?",
+      "reference_answer": "Patient P1000 (Aisha Joshi, 63-year-old male) presents with typical angina chest pain, resting blood pressure of 145.0 mmHg, cholesterol of 233.0 mg/dL, elevated fasting blood sugar (True, >120 mg/dL), resting ECG showing left ventricular hypertrophy, maximum heart rate 150.0 bpm, ST depression oldpeak 2.3 downsloping, and diagnosis outcome 0.",
+      "retrieved_contexts": [
+        "Patient ID P1060, Name Reyansh Kapoor, aged 51 years with sex value Female, chest pain type asymptomatic, resting blood pressure 130.0 mmHg, cholesterol level 305.0 mg/dL, fasting blood sugar False, rest ECG result normal, maximum heart rate 142.0, exercise induced angina True, oldpeak value 1.2, slope value flat, ca value 0.0, thal value reversable defect, and diagnosis outcome 2.",
+        "Patient ID P1097, Name Krishna Kulkarni, aged 60 years with sex value Female, chest pain type asymptomatic, resting blood pressure 150.0 mmHg, cholesterol level 258.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 157.0, exercise induced angina False, oldpeak value 2.6, slope value flat, ca value 2.0, thal value reversable defect, and diagnosis outcome 3.",
+        "Patient ID P1002, Name Ishaan Kapoor, aged 67 years with sex value Male, chest pain type asymptomatic, resting blood pressure 120.0 mmHg, cholesterol level 229.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 129.0, exercise induced angina True, oldpeak value 2.6, slope value flat, ca value 2.0, thal value reversable defect, and diagnosis outcome 1.",
+        "Patient ID P1068, Name Krishna Gupta, aged 59 years with sex value Male, chest pain type asymptomatic, resting blood pressure 170.0 mmHg, cholesterol level 326.0 mg/dL, fasting blood sugar False, rest ECG result lv hypertrophy, maximum heart rate 140.0, exercise induced angina True, oldpeak value 3.4, slope value downsloping, ca value 0.0, thal value reversable defect, and diagnosis outcome 2.",
+        "Patient ID P1385, Name Krishna Kapoor, aged 46 years with sex value Male, chest pain type asymptomatic, resting blood pressure 110.0 mmHg, cholesterol level 238.0 mg/dL, fasting blood sugar False, rest ECG result st-t abnormality, maximum heart rate 140.0, exercise induced angina True, oldpeak value 1.0, slope value flat, ca value nan, thal value normal, and diagnosis outcome 0."
+      ],
+      "generated_answer": "I could not find sufficient information in the available medical knowledge base to answer this question.",
+      "source": "cached_evaluation_results",
+      "retrieval_generation_time_sec": 0.0,
+      "evaluation_time_sec": 401.071,
+      "scores": {
+        "context_precision": 0.0,
+        "context_recall": null,
+        "faithfulness": null,
+        "answer_relevancy": null
+      },
+      "errors": [
+        "context_recall evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}",
+        "faithfulness evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}",
+        "answer_relevancy evaluation failed: InstructorRetryException: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+      ]
+    }
+  ],
+  "summary_metrics": {
+    "context_precision": 0.3333333333,
+    "context_recall": null,
+    "faithfulness": null,
+    "answer_relevancy": 0.9753941371678378
+  },
+  "errors": [],
+  "evaluation_time_sec": 401.071,
+  "total_time_sec": 413.632
+}

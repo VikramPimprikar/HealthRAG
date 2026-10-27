@@ -10,19 +10,23 @@ Author: RAGChainMed
 
 import hashlib
 import json
+import uuid
 import datetime
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Union
+
+from app.blockchain.evidence_verifier import (
+    canonicalize_evidence,
+    compute_canonical_hash,
+    verify_evidence_integrity as _verify_evidence_integrity,
+    verify_query_evidence as _verify_query_evidence
+)
 
 
 def sha256_hash(content: Any) -> str:
-    """Compute SHA-256 hash of string or JSON-serializable content"""
+    """Compute SHA-256 hash using deterministic canonicalization"""
     if content is None:
         return ""
-    if isinstance(content, (dict, list)):
-        text = json.dumps(content, sort_keys=True)
-    else:
-        text = str(content)
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return compute_canonical_hash(content)
 
 
 # ============================================================
@@ -57,7 +61,7 @@ class Block:
 
     def calculate_hash(self) -> str:
         """Compute SHA-256 hash across all block fields"""
-        provenance_str = json.dumps(self.provenance, sort_keys=True)
+        provenance_str = json.dumps(self.provenance, sort_keys=True, separators=(",", ":"))
         block_data = (
             f"{self.index}|"
             f"{self.timestamp}|"
@@ -109,7 +113,7 @@ class Blockchain:
             previous_hash="0" * 64,
             query_hash="",
             evidence_hash="",
-            provenance={"system": "RAGChainMed Healthcare Audit Subsystem", "version": "1.0"}
+            provenance={"system": "RAGChainMed Healthcare Audit Subsystem", "version": "2.0"}
         )
         self.chain.append(genesis_block)
 
@@ -155,7 +159,8 @@ class Blockchain:
                 return {
                     "is_valid": False,
                     "error_at_index": current_block.index,
-                    "reason": "Block hash mismatch - data may have been tampered with."
+                    "reason": f"⚠️ Blockchain integrity compromised. Block #{current_block.index} hash mismatch.",
+                    "message": f"⚠️ Blockchain integrity compromised. Block #{current_block.index} has been modified."
                 }
 
             # 2. Verify that previous_hash matches previous block's hash
@@ -163,61 +168,187 @@ class Blockchain:
                 return {
                     "is_valid": False,
                     "error_at_index": current_block.index,
-                    "reason": "Chain linkage broken - previous hash mismatch."
+                    "reason": f"⚠️ Blockchain integrity compromised. Chain linkage broken at block #{current_block.index}.",
+                    "message": f"⚠️ Blockchain integrity compromised. Block #{current_block.index} linkage broken."
                 }
 
         return {
             "is_valid": True,
             "total_blocks": len(self.chain),
-            "latest_block_hash": self.chain[-1].hash
+            "latest_block_hash": self.chain[-1].hash,
+            "message": "✅ Blockchain integrity verified. All blocks are valid and correctly linked."
         }
 
-    def verify_evidence(
-        self,
-        block_index: int,
-        evidence_text: Optional[str] = None,
-        evidence_hash: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def verify_block(self, block_index: int) -> Dict[str, Any]:
         """
-        Verify that evidence text or evidence hash matches the on-chain recorded hash
-        for a specific block.
+        Verify cryptographic integrity of an individual block.
+        Reconstructs the block data, calculates its SHA-256 hash again,
+        and compares with the stored block.hash.
         """
         if block_index < 0 or block_index >= len(self.chain):
             return {
                 "verified": False,
-                "error": f"Block index {block_index} out of range (chain length: {len(self.chain)})"
+                "tampered": True,
+                "block_index": block_index,
+                "message": f"⚠️ Block index {block_index} out of range.",
+                "status": "BLOCKCHAIN TAMPERING DETECTED",
+                "debug": {
+                    "stored_block_hash": "",
+                    "recalculated_block_hash": "",
+                    "verification_result": "⚠️ BLOCKCHAIN TAMPERING DETECTED"
+                }
             }
 
         block = self.chain[block_index]
+        recalculated_hash = block.calculate_hash()
+        stored_hash = block.hash
 
-        if not block.evidence_hash:
+        hash_valid = (recalculated_hash == stored_hash)
+        prev_valid = True
+        if block_index > 0:
+            prev_block = self.chain[block_index - 1]
+            prev_valid = (block.previous_hash == prev_block.hash)
+
+        is_verified = hash_valid and prev_valid
+        message = "✅ BLOCK INTEGRITY VERIFIED" if is_verified else "⚠️ BLOCKCHAIN TAMPERING DETECTED"
+        status = "BLOCK INTEGRITY VERIFIED" if is_verified else "BLOCKCHAIN TAMPERING DETECTED"
+
+        return {
+            "verified": is_verified,
+            "tampered": not is_verified,
+            "block_index": block.index,
+            "stored_block_hash": stored_hash,
+            "recalculated_block_hash": recalculated_hash,
+            "previous_hash": block.previous_hash,
+            "previous_hash_valid": prev_valid,
+            "hash_matches": hash_valid,
+            "message": message,
+            "status": status,
+            "debug": {
+                "block_index": block.index,
+                "stored_block_hash": stored_hash,
+                "recalculated_block_hash": recalculated_hash,
+                "verification_result": message
+            }
+        }
+
+    def simulate_block_tampering(self, block_index: int, field: str = "action", new_value: str = "TAMPERED_ACTION") -> Dict[str, Any]:
+        """For demonstration only: deliberately modify a block's field without updating its cryptographic hash."""
+        if 0 <= block_index < len(self.chain):
+            setattr(self.chain[block_index], field, new_value)
+            return {"success": True, "block_index": block_index, "tampered_field": field, "new_value": new_value}
+        return {"success": False, "error": "Invalid block index"}
+
+    def restore_block(self, block_index: int, original_action: str = "RAG_QUERY"):
+        """Restore original block state after demonstration."""
+        if 0 <= block_index < len(self.chain):
+            self.chain[block_index].action = original_action
+            self.chain[block_index].hash = self.chain[block_index].calculate_hash()
+
+    def verify_evidence(
+        self,
+        block_index: int,
+        evidence_text: Optional[Any] = None,
+        stored_hash: Optional[str] = None,
+        evidence_hash: Optional[str] = None,
+        audit_logger_ref: Optional[Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Verify that evidence text matches the on-chain recorded hash for a specific block.
+        Always recalculates the SHA-256 hash strictly from the provided evidence_text (or from the audit record if omitted).
+        Compares: recalculated_current_evidence_hash == stored_evidence_hash
+        """
+        if block_index < 0 or block_index >= len(self.chain):
             return {
                 "verified": False,
-                "error": f"Block {block_index} does not contain an evidence hash."
+                "tampered": True,
+                "error": f"Block index {block_index} out of range (chain length: {len(self.chain)})",
+                "stored_hash": "",
+                "current_hash": "",
+                "stored_evidence_hash": "",
+                "computed_evidence_hash": "",
+                "message": f"Block index {block_index} out of range.",
+                "debug": {
+                    "stored_evidence_hash": "",
+                    "recalculated_current_hash": "",
+                    "verification_result": "FAILED (Block Index Out Of Range)"
+                }
             }
 
-        # Determine target hash
-        if evidence_hash:
-            computed_hash = evidence_hash.strip().lower()
-        elif evidence_text is not None:
-            computed_hash = hashlib.sha256(evidence_text.encode("utf-8")).hexdigest()
+        block = self.chain[block_index]
+        on_chain_hash = (block.evidence_hash or "").strip().lower()
+        target_stored = (stored_hash or evidence_hash or on_chain_hash).strip().lower()
+
+        if not target_stored:
+            return {
+                "verified": False,
+                "tampered": True,
+                "error": f"Block {block_index} does not contain an evidence hash.",
+                "stored_hash": "",
+                "current_hash": "",
+                "stored_evidence_hash": "",
+                "computed_evidence_hash": "",
+                "message": f"Block {block_index} does not contain an evidence hash.",
+                "debug": {
+                    "stored_evidence_hash": "",
+                    "recalculated_current_hash": "",
+                    "verification_result": "FAILED (No Stored Evidence Hash)"
+                }
+            }
+
+        # 1. Determine the actual evidence content to hash
+        eval_evidence = None
+        if evidence_text is not None and (not isinstance(evidence_text, str) or evidence_text.strip() != ""):
+            eval_evidence = evidence_text
         else:
-            return {
-                "verified": False,
-                "error": "Neither evidence_text nor evidence_hash was provided."
-            }
+            # Look up recorded evidence in audit logger
+            logger = audit_logger_ref or globals().get("audit_logger")
+            if logger and hasattr(logger, "records"):
+                for r in logger.records:
+                    if r.block_index == block_index:
+                        if isinstance(r.details, dict) and "retrieved_evidence_texts" in r.details:
+                            eval_evidence = r.details["retrieved_evidence_texts"]
+                        elif isinstance(r.details, dict) and "retrieved_texts" in r.details:
+                            eval_evidence = r.details["retrieved_texts"]
+                        elif r.details:
+                            eval_evidence = r.details
+                        break
 
-        stored_hash = block.evidence_hash.strip().lower()
-        matches = (computed_hash == stored_hash)
+        # 2. Recalculate hash strictly from evidence content
+        if eval_evidence is not None:
+            computed_hash = compute_canonical_hash(eval_evidence)
+        else:
+            computed_hash = ""
 
-        # Also ensure chain is valid
+        # 3. Compare recalculated hash with stored hash
+        matches = (computed_hash.lower() == target_stored) and bool(computed_hash) and bool(target_stored)
+
+        # If user passed a stored hash that differs from on-chain hash, mark as tampered
+        if on_chain_hash and target_stored != on_chain_hash:
+            matches = False
+
         chain_status = self.verify_chain()
+        result_status = "VERIFIED / NO TAMPERING" if matches else "TAMPERING DETECTED"
 
         return {
             "verified": matches,
-            "block_index": block.index,
-            "stored_evidence_hash": stored_hash,
+            "tampered": not matches,
+            "stored_hash": target_stored,
+            "current_hash": computed_hash,
+            "stored_evidence_hash": target_stored,
             "computed_evidence_hash": computed_hash,
+            "on_chain_evidence_hash": on_chain_hash,
+            "message": (
+                "Evidence integrity verified. No tampering detected."
+                if matches
+                else "Evidence tampering detected. Hash mismatch."
+            ),
+            "debug": {
+                "stored_evidence_hash": target_stored,
+                "recalculated_current_hash": computed_hash,
+                "verification_result": result_status
+            },
+            "block_index": block.index,
             "chain_valid": chain_status["is_valid"],
             "block_timestamp": block.timestamp,
             "user_id": block.user_id,
@@ -255,8 +386,10 @@ class AuditRecord:
         query_hash: str = "",
         evidence_hash: str = "",
         block_index: Optional[int] = None,
-        block_hash: Optional[str] = None
+        block_hash: Optional[str] = None,
+        query_id: Optional[str] = None
     ):
+        self.query_id = query_id or f"QRY-{uuid.uuid4().hex[:8].upper()}"
         self.user_id = user_id
         self.action = action
         self.data_type = data_type
@@ -273,6 +406,7 @@ class AuditRecord:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API response"""
         return {
+            "query_id": self.query_id,
             "user_id": self.user_id,
             "action": self.action,
             "data_type": self.data_type,
@@ -309,14 +443,17 @@ class BlockchainAuditLog:
         status: str = "success",
         error_message: Optional[str] = None,
         query_text: Optional[str] = None,
-        evidence_bundle: Optional[Any] = None
+        evidence_bundle: Optional[Any] = None,
+        query_id: Optional[str] = None
     ) -> AuditRecord:
         """Add an audit record and create corresponding blockchain block"""
-        q_hash = sha256_hash(query_text) if query_text else ""
-        e_hash = sha256_hash(evidence_bundle) if evidence_bundle is not None else ""
+        q_id = query_id or f"QRY-{uuid.uuid4().hex[:8].upper()}"
+        q_hash = compute_canonical_hash(query_text) if query_text else ""
+        e_hash = compute_canonical_hash(evidence_bundle) if evidence_bundle is not None else ""
 
         # Provenance metadata (no raw full patient text stored in block)
         provenance = {
+            "query_id": q_id,
             "data_type": data_type,
             "patient_id": patient_id,
             "has_evidence": bool(e_hash)
@@ -348,7 +485,8 @@ class BlockchainAuditLog:
             query_hash=q_hash,
             evidence_hash=e_hash,
             block_index=new_block.index,
-            block_hash=new_block.hash
+            block_hash=new_block.hash,
+            query_id=q_id
         )
         self.records.append(record)
         return record
@@ -370,14 +508,48 @@ class BlockchainAuditLog:
         """Verify blockchain integrity"""
         return self.blockchain.verify_chain()
 
+    def verify_block(self, block_index: int) -> Dict[str, Any]:
+        """Verify individual block integrity"""
+        return self.blockchain.verify_block(block_index)
+
     def verify_evidence(
         self,
         block_index: int,
-        evidence_text: Optional[str] = None,
+        evidence_text: Optional[Any] = None,
+        stored_hash: Optional[str] = None,
         evidence_hash: Optional[str] = None
     ) -> Dict[str, Any]:
         """Verify evidence integrity against blockchain"""
-        return self.blockchain.verify_evidence(block_index, evidence_text, evidence_hash)
+        return self.blockchain.verify_evidence(
+            block_index=block_index,
+            evidence_text=evidence_text,
+            stored_hash=stored_hash,
+            evidence_hash=evidence_hash,
+            audit_logger_ref=self
+        )
+
+    def verify_evidence_integrity(
+        self,
+        evidence: Any,
+        stored_hash: str
+    ) -> Dict[str, Any]:
+        """Verify evidence integrity given evidence content and stored hash"""
+        return _verify_evidence_integrity(evidence, stored_hash)
+
+    def verify_query_evidence(
+        self,
+        identifier: Union[int, str],
+        current_evidence: Optional[Any] = None,
+        stored_hash_override: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Verify query evidence against recorded blockchain hash"""
+        return _verify_query_evidence(
+            identifier=identifier,
+            current_evidence=current_evidence,
+            blockchain_instance=self.blockchain,
+            audit_logger_instance=self,
+            stored_hash_override=stored_hash_override
+        )
 
     def generate_audit_report(self, patient_id: Optional[str] = None) -> Dict[str, Any]:
         """Generate audit report"""
@@ -407,7 +579,7 @@ audit_logger = BlockchainAuditLog(blockchain)
 
 
 # ============================================================
-# COMPATIBILITY FUNCTIONS
+# CONVENIENCE / COMPATIBILITY FUNCTIONS
 # ============================================================
 
 def add_block(
@@ -420,3 +592,23 @@ def add_block(
 ) -> Block:
     """Convenience function to add a block to the global chain"""
     return blockchain.add_block(user_id, action, status, query_hash, evidence_hash, provenance)
+
+
+def verify_evidence_integrity(evidence: Any, stored_hash: str) -> Dict[str, Any]:
+    """Recalculate SHA-256 and compare with stored_hash"""
+    return _verify_evidence_integrity(evidence, stored_hash)
+
+
+def verify_query_evidence(
+    identifier: Union[int, str],
+    current_evidence: Optional[Any] = None,
+    stored_hash_override: Optional[str] = None
+) -> Dict[str, Any]:
+    """Retrieve stored evidence/hash for a query and verify against current evidence"""
+    return _verify_query_evidence(
+        identifier=identifier,
+        current_evidence=current_evidence,
+        blockchain_instance=blockchain,
+        audit_logger_instance=audit_logger,
+        stored_hash_override=stored_hash_override
+    )

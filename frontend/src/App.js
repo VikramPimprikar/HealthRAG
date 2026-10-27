@@ -244,18 +244,19 @@ function App() {
                 }}
               >
                 {usersList.length > 0 ? (
-                  usersList.map((u) => (
-                    <option key={u.user_id} value={u.user_id} style={{ background: "#111827", color: "#fff" }}>
-                      {u.user_id.toUpperCase()} ({u.role.toUpperCase()})
-                    </option>
-                  ))
+                  usersList
+                    .filter((u) => u.role !== "auditor" && u.user_id !== "AUDITOR001")
+                    .map((u) => (
+                      <option key={u.user_id} value={u.user_id} style={{ background: "#111827", color: "#fff" }}>
+                        {u.user_id.toUpperCase()} ({u.role.toUpperCase()})
+                      </option>
+                    ))
                 ) : (
                   <>
                     <option value="admin" style={{ background: "#111827" }}>ADMIN (ADMIN)</option>
                     <option value="DOC001" style={{ background: "#111827" }}>DOC001 (DOCTOR)</option>
                     <option value="D101" style={{ background: "#111827" }}>D101 (DOCTOR)</option>
                     <option value="NURSE001" style={{ background: "#111827" }}>NURSE001 (NURSE)</option>
-                    <option value="AUDITOR001" style={{ background: "#111827" }}>AUDITOR001 (AUDITOR)</option>
                     <option value="PATIENT001" style={{ background: "#111827" }}>PATIENT001 (PATIENT)</option>
                   </>
                 )}

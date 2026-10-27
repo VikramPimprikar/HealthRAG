@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Home({ activeUser, apiBase }) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [topK, setTopK] = useState(5);
   const [results, setResults] = useState([]);
@@ -14,6 +15,7 @@ function Home({ activeUser, apiBase }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [copiedHash, setCopiedHash] = useState(null);
+  const [cardStates, setCardStates] = useState({});
 
   const sampleQueries = [
     { label: "👤 Patient P1651 Findings", q: "Show patient P1651" },
@@ -68,6 +70,7 @@ function Home({ activeUser, apiBase }) {
     setEvidenceHash("");
     setBlockIndex(null);
     setBlockHash("");
+    setCardStates({});
 
     try {
       const response = await fetch(`${apiBase}/api/v1/query`, {
@@ -119,6 +122,150 @@ function Home({ activeUser, apiBase }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerifyEvidenceIntegrity = async (evidenceId, textToVerify) => {
+    setCardStates((prev) => ({
+      ...prev,
+      [evidenceId]: {
+        ...(prev[evidenceId] || { text: textToVerify, isTampered: false }),
+        verifying: true,
+        error: null
+      }
+    }));
+
+    try {
+      const res = await fetch(`${apiBase}/api/v1/evidence/verify-integrity`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Id": activeUser
+        },
+        body: JSON.stringify({
+          evidence_id: evidenceId,
+          evidence_text: textToVerify
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `HTTP Error ${res.status}: Verification failed`);
+      }
+
+      const data = await res.json();
+      setCardStates((prev) => ({
+        ...prev,
+        [evidenceId]: {
+          ...(prev[evidenceId] || { text: textToVerify }),
+          status: data.status,
+          verified: data.verified,
+          tamperDetected: data.tamper_detected,
+          baselineHash: data.baseline_hash,
+          recalculatedHash: data.recalculated_hash,
+          message: data.message,
+          verifying: false,
+          error: null
+        }
+      }));
+    } catch (err) {
+      setCardStates((prev) => ({
+        ...prev,
+        [evidenceId]: {
+          ...(prev[evidenceId] || { text: textToVerify, isTampered: false }),
+          verifying: false,
+          error: err.message
+        }
+      }));
+    }
+  };
+
+  const handleSimulateTampering = async (evidenceId, originalText) => {
+    try {
+      const res = await fetch(`${apiBase}/api/v1/evidence/simulate-tamper`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Id": activeUser
+        },
+        body: JSON.stringify({
+          evidence_id: evidenceId,
+          evidence_text: originalText
+        })
+      });
+
+      let tamperedText = "";
+      if (res.ok) {
+        const data = await res.json();
+        tamperedText = data.tampered_text;
+      } else {
+        tamperedText = originalText.includes("resting blood pressure")
+          ? originalText.replace(/resting blood pressure\s*[\d.]+/i, "resting blood pressure 195.0")
+          : originalText + " [ALTERED TEST COPY: FOR INTEGRITY DEMO]";
+      }
+
+      setCardStates((prev) => ({
+        ...prev,
+        [evidenceId]: {
+          text: tamperedText,
+          isTampered: true,
+          verifying: true,
+          error: null
+        }
+      }));
+
+      // Immediately verify the tampered test copy against baseline hash
+      const vRes = await fetch(`${apiBase}/api/v1/evidence/verify-integrity`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Id": activeUser
+        },
+        body: JSON.stringify({
+          evidence_id: evidenceId,
+          evidence_text: tamperedText
+        })
+      });
+
+      if (vRes.ok) {
+        const vData = await vRes.json();
+        setCardStates((prev) => ({
+          ...prev,
+          [evidenceId]: {
+            text: tamperedText,
+            isTampered: true,
+            status: vData.status,
+            verified: vData.verified,
+            tamperDetected: vData.tamper_detected,
+            baselineHash: vData.baseline_hash,
+            recalculatedHash: vData.recalculated_hash,
+            message: vData.message,
+            verifying: false,
+            error: null
+          }
+        }));
+      } else {
+        const errData = await vRes.json().catch(() => ({}));
+        setCardStates((prev) => ({
+          ...prev,
+          [evidenceId]: {
+            text: tamperedText,
+            isTampered: true,
+            verifying: false,
+            error: errData.detail || "Tamper verification failed"
+          }
+        }));
+      }
+    } catch (err) {
+      console.error("Simulation failed:", err);
+    }
+  };
+
+  const handleResetEvidence = (evidenceId, originalText) => {
+    setCardStates((prev) => {
+      const next = { ...prev };
+      delete next[evidenceId];
+      return next;
+    });
   };
 
   const copyToClipboard = (text, key) => {
@@ -332,13 +479,22 @@ function Home({ activeUser, apiBase }) {
                 <span className="hash-code">{evidenceHash}</span>
               </div>
 
-              <button
-                className="btn-secondary"
-                style={{ fontSize: "11px", padding: "3px 8px" }}
-                onClick={() => copyToClipboard(evidenceHash, "bundle")}
-              >
-                {copiedHash === "bundle" ? "✓ Copied" : "Copy Hash"}
-              </button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  className="btn-primary"
+                  style={{ fontSize: "11px", padding: "4px 12px" }}
+                  onClick={() => navigate("/audit")}
+                >
+                  ⛓️ View Blockchain Block #{blockIndex}
+                </button>
+                <button
+                  className="btn-secondary"
+                  style={{ fontSize: "11px", padding: "4px 10px" }}
+                  onClick={() => copyToClipboard(evidenceHash, "bundle")}
+                >
+                  {copiedHash === "bundle" ? "✓ Copied" : "Copy Hash"}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -385,6 +541,17 @@ function Home({ activeUser, apiBase }) {
           {hasRelevantEvidence && results.map((item, index) => {
             const meta = item.metadata || {};
             const isMedicalKb = meta.doc_type === "medical_knowledge" || (meta.id && meta.id.startsWith("KB"));
+            const evidenceId = (meta.id && meta.id !== "KB") ? meta.id : (item.patient_id || `Record-${index + 1}`);
+            const cardState = cardStates[evidenceId] || {
+              text: item.text,
+              isTampered: false,
+              status: null,
+              message: null,
+              baselineHash: null,
+              recalculatedHash: null,
+              verifying: false,
+              error: null
+            };
 
             return (
               <div
@@ -394,7 +561,8 @@ function Home({ activeUser, apiBase }) {
                   borderLeft: isMedicalKb ? "4px solid #10b981" : "4px solid #6366f1",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "14px"
+                  gap: "14px",
+                  borderColor: cardState.status === "Potential Tampering Detected" ? "rgba(244, 63, 94, 0.4)" : undefined
                 }}
               >
                 {/* Evidence Card Header */}
@@ -416,19 +584,155 @@ function Home({ activeUser, apiBase }) {
                         Age: {meta.age} | Sex: {meta.sex}
                       </span>
                     )}
+                    {cardState.isTampered && (
+                      <span className="badge badge-warning" style={{ fontSize: "10px" }}>
+                        🧪 Simulated Test Copy (In-Memory)
+                      </span>
+                    )}
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    {/* VERIFY INTEGRITY ACTION */}
                     <button
                       className="btn-primary"
-                      style={{ fontSize: "12px", padding: "6px 14px" }}
+                      style={{
+                        fontSize: "11px",
+                        padding: "5px 12px",
+                        background: cardState.status === "Integrity Verified"
+                          ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                          : undefined
+                      }}
+                      onClick={() => handleVerifyEvidenceIntegrity(evidenceId, cardState.text)}
+                      disabled={cardState.verifying}
+                      title="Recalculate SHA-256 and compare against baseline hash"
+                    >
+                      {cardState.verifying ? "⏳ Verifying..." : "🛡️ Verify Integrity"}
+                    </button>
+
+                    {/* SIMULATE TAMPERING ACTION */}
+                    {!cardState.isTampered ? (
+                      <button
+                        className="btn-secondary"
+                        style={{ fontSize: "11px", padding: "5px 12px", borderColor: "rgba(245, 158, 11, 0.4)", color: "#fbbf24" }}
+                        onClick={() => handleSimulateTampering(evidenceId, item.text)}
+                        title="Demonstration: Alter a test copy in memory to test tamper detection without modifying dataset"
+                      >
+                        ⚡ Simulate Tampering
+                      </button>
+                    ) : (
+                      <button
+                        className="btn-secondary"
+                        style={{ fontSize: "11px", padding: "5px 12px", borderColor: "rgba(16, 185, 129, 0.4)", color: "#34d399" }}
+                        onClick={() => handleResetEvidence(evidenceId, item.text)}
+                        title="Restore authentic unmodified clinical record"
+                      >
+                        ↩️ Reset Evidence
+                      </button>
+                    )}
+
+                    <button
+                      className="btn-secondary"
+                      style={{ fontSize: "11px", padding: "5px 10px" }}
                       onClick={() => navigate("/audit")}
                       title="View in Blockchain Audit Trail"
                     >
-                      ⛓️ View in Audit Trail
+                      ⛓️ Blockchain
                     </button>
                   </div>
                 </div>
+
+                {/* INTEGRITY STATUS BANNER */}
+                {cardState.status === "Integrity Verified" && (
+                  <div
+                    className="fade-in"
+                    style={{
+                      background: "var(--success-bg)",
+                      border: "1px solid var(--success-border)",
+                      borderRadius: "8px",
+                      padding: "10px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "8px"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontSize: "14px" }}>✅</span>
+                      <strong style={{ color: "var(--success-text)", fontSize: "13px" }}>
+                        Integrity Verified
+                      </strong>
+                      <span style={{ color: "#94a3b8", fontSize: "12px" }}>
+                        SHA-256 hash matches registered baseline. Zero tampering detected.
+                      </span>
+                    </div>
+                    {cardState.baselineHash && (
+                      <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                        Baseline Hash: <span className="hash-code">{cardState.baselineHash.substring(0, 16)}...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {cardState.status === "Potential Tampering Detected" && (
+                  <div
+                    className="fade-in"
+                    style={{
+                      background: "var(--danger-bg)",
+                      border: "1px solid var(--danger-border)",
+                      borderRadius: "8px",
+                      padding: "12px 14px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "15px" }}>⚠️</span>
+                        <strong style={{ color: "var(--danger-text)", fontSize: "13px" }}>
+                          Potential Tampering Detected
+                        </strong>
+                        <span style={{ color: "#fca5a5", fontSize: "12px" }}>
+                          Recalculated SHA-256 hash does not match registered baseline!
+                        </span>
+                      </div>
+                      {cardState.isTampered && (
+                        <button
+                          className="btn-secondary"
+                          style={{ fontSize: "11px", padding: "3px 10px", color: "#34d399", borderColor: "rgba(16, 185, 129, 0.4)" }}
+                          onClick={() => handleResetEvidence(evidenceId, item.text)}
+                        >
+                          ↩️ Restore Authentic Evidence
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
+                      <span>Baseline: <span className="hash-code">{cardState.baselineHash ? cardState.baselineHash.substring(0, 16) + "..." : "N/A"}</span></span>
+                      <span>Recalculated: <span className="hash-code" style={{ color: "#fb7185" }}>{cardState.recalculatedHash ? cardState.recalculatedHash.substring(0, 16) + "..." : "N/A"}</span></span>
+                    </div>
+                  </div>
+                )}
+
+                {cardState.error && (
+                  <div
+                    className="fade-in"
+                    style={{
+                      background: "rgba(244, 63, 94, 0.1)",
+                      border: "1px solid rgba(244, 63, 94, 0.3)",
+                      borderRadius: "8px",
+                      padding: "8px 12px",
+                      fontSize: "12px",
+                      color: "#fb7185",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}
+                  >
+                    <span>⛔</span>
+                    <span>{cardState.error}</span>
+                  </div>
+                )}
 
                 {/* Biomarkers / Attributes Tag Bar (No similarity scores) */}
                 {!isMedicalKb && (
@@ -467,15 +771,16 @@ function Home({ activeUser, apiBase }) {
                 {/* Evidence Text */}
                 <div
                   style={{
-                    background: "#080c14",
+                    background: cardState.isTampered ? "rgba(244, 63, 94, 0.08)" : "#080c14",
+                    border: cardState.isTampered ? "1px dashed rgba(244, 63, 94, 0.4)" : "1px solid rgba(255, 255, 255, 0.04)",
                     padding: "14px",
                     borderRadius: "8px",
                     fontSize: "13px",
-                    color: "#cbd5e1",
+                    color: cardState.isTampered ? "#fecdd3" : "#cbd5e1",
                     lineHeight: "1.6"
                   }}
                 >
-                  {item.text}
+                  {cardState.text}
                 </div>
 
                 {/* Hash Footer */}
@@ -492,13 +797,15 @@ function Home({ activeUser, apiBase }) {
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     <span>Chunk SHA-256:</span>
-                    <span className="hash-code">{item.sha256_hash}</span>
+                    <span className="hash-code">
+                      {cardState.isTampered && cardState.recalculatedHash ? cardState.recalculatedHash : item.sha256_hash}
+                    </span>
                   </div>
 
                   <button
                     className="btn-secondary"
                     style={{ fontSize: "10px", padding: "2px 8px" }}
-                    onClick={() => copyToClipboard(item.sha256_hash, `chunk-${index}`)}
+                    onClick={() => copyToClipboard(cardState.isTampered && cardState.recalculatedHash ? cardState.recalculatedHash : item.sha256_hash, `chunk-${index}`)}
                   >
                     {copiedHash === `chunk-${index}` ? "✓ Copied" : "Copy"}
                   </button>

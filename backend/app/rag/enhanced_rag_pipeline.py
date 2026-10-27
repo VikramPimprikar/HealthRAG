@@ -40,6 +40,7 @@ except ImportError:
     from langchain_community.embeddings import HuggingFaceEmbeddings
 
 from app.clinical.structured_query_engine import get_structured_engine
+from app.blockchain.evidence_verifier import compute_canonical_hash, canonicalize_evidence
 
 
 MISMATCH_REFUSAL_MESSAGE = (
@@ -104,9 +105,9 @@ def is_clinical_query(query: str) -> bool:
     return False
 
 
-def sha256_hash(text: str) -> str:
-    """Compute SHA-256 hash of a string"""
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+def sha256_hash(text: Any) -> str:
+    """Compute SHA-256 hash using deterministic canonicalization"""
+    return compute_canonical_hash(text)
 
 
 class MedicalRAGService:
